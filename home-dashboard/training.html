@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F4EFE6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1424" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Training">
+<meta name="description" content="Trainings-Logger, Kraftverlauf, Pläne, Timer">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230E1424'/%3E%3Ccircle cx='32' cy='30' r='12' fill='%23F2B66D'/%3E%3Cpath d='M18 50h28' stroke='%23F4EFE6' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>Training · Zuhause Dashboard</title>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body data-page="training">
+<header class="topbar" id="topbar"></header>
+<main class="main" id="view" tabindex="-1"></main>
+<div class="timer-pill" id="timerPill" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+<dialog class="sheet" id="sheet" aria-labelledby="sheetTitle"><div class="sheet-inner" id="sheetBody"></div></dialog>
+<script src="dashboard.js"></script>
+</body>
+</html>
