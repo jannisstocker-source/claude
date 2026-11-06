@@ -1,7 +1,7 @@
 /* Zuhause Dashboard – gemeinsame Logik aller Seiten */
 'use strict';
 const PAGES = [{"view": "heute", "file": "index.html", "name": "Zuhause Dashboard", "short": "Zuhause"}, {"view": "training", "file": "training.html", "name": "Training", "short": "Training"}, {"view": "essen", "file": "ernaehrung.html", "name": "Ernährung", "short": "Essen"}, {"view": "laufen", "file": "laufen.html", "name": "Laufen", "short": "Laufen"}, {"view": "zuhause", "file": "zuhause.html", "name": "Zuhause", "short": "Zuhause"}, {"view": "finanzen", "file": "finanzen.html", "name": "Finanzen", "short": "Finanzen"}, {"view": "planer", "file": "planer.html", "name": "Planer", "short": "Planer"}, {"view": "einstellungen", "file": "einstellungen.html", "name": "Einstellungen", "short": "Einstellungen"}];
-const SPRITE = "<svg class=\"sprite\" aria-hidden=\"true\" focusable=\"false\">\n  <symbol id=\"i-home\" viewBox=\"0 0 24 24\"><path d=\"M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z\"/></symbol>\n  <symbol id=\"i-gym\" viewBox=\"0 0 24 24\"><path d=\"M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11\"/></symbol>\n  <symbol id=\"i-food\" viewBox=\"0 0 24 24\"><path d=\"M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 21V3c-2.2 1.2-3.5 3.6-3.5 7.5V14H16\"/></symbol>\n  <symbol id=\"i-run\" viewBox=\"0 0 24 24\"><circle cx=\"15\" cy=\"4.5\" r=\"1.8\"/><path d=\"m7 21 3.2-5.2 3 2.2.8 3M6 12l3.2-3.4 3.6.4 2 3.4 3 1.3M10.4 15.8l2.1-6.6\"/></symbol>\n  <symbol id=\"i-house\" viewBox=\"0 0 24 24\"><path d=\"M3.5 10 12 3.5 20.5 10M5.5 8.5V20h13V8.5\"/><path d=\"M10 20v-5.5h4V20\"/></symbol>\n  <symbol id=\"i-tv\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8.5 20.5h7M12 17v3.5\"/></symbol>\n  <symbol id=\"i-settings\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5\"/></symbol>\n  <symbol id=\"i-plus\" viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></symbol>\n  <symbol id=\"i-minus\" viewBox=\"0 0 24 24\"><path d=\"M5 12h14\"/></symbol>\n  <symbol id=\"i-check\" viewBox=\"0 0 24 24\"><path d=\"m5 12.5 4.5 4.5L19 7.5\"/></symbol>\n  <symbol id=\"i-x\" viewBox=\"0 0 24 24\"><path d=\"M6 6l12 12M18 6 6 18\"/></symbol>\n  <symbol id=\"i-left\" viewBox=\"0 0 24 24\"><path d=\"m14.5 6-6 6 6 6\"/></symbol>\n  <symbol id=\"i-right\" viewBox=\"0 0 24 24\"><path d=\"m9.5 6 6 6-6 6\"/></symbol>\n  <symbol id=\"i-up\" viewBox=\"0 0 24 24\"><path d=\"m6 14.5 6-6 6 6\"/></symbol>\n  <symbol id=\"i-down\" viewBox=\"0 0 24 24\"><path d=\"m6 9.5 6 6 6-6\"/></symbol>\n  <symbol id=\"i-trash\" viewBox=\"0 0 24 24\"><path d=\"M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10.5 11v5.5M13.5 11v5.5\"/></symbol>\n  <symbol id=\"i-edit\" viewBox=\"0 0 24 24\"><path d=\"M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4\"/></symbol>\n  <symbol id=\"i-timer\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"13.5\" r=\"7.5\"/><path d=\"M12 9.5v4l2.5 2M9.5 2.8h5M19 6.5l1.5-1.5\"/></symbol>\n  <symbol id=\"i-play\" viewBox=\"0 0 24 24\"><path d=\"M7.5 5v14l11-7z\"/></symbol>\n  <symbol id=\"i-pause\" viewBox=\"0 0 24 24\"><path d=\"M8 5v14M16 5v14\"/></symbol>\n  <symbol id=\"i-stop\" viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"6\" width=\"12\" height=\"12\" rx=\"1.5\"/></symbol>\n  <symbol id=\"i-search\" viewBox=\"0 0 24 24\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m15.5 15.5 5 5\"/></symbol>\n  <symbol id=\"i-barcode\" viewBox=\"0 0 24 24\"><path d=\"M3 5v14M6 5v14M9.5 5v14M11.5 5v14M15 5v14M18 5v14M21 5v14\"/></symbol>\n  <symbol id=\"i-flame\" viewBox=\"0 0 24 24\"><path d=\"M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-4 3.3-6 3.8-9.8 2.6 1.5 4 3.7 4.2 6.2 1-.6 1.6-1.6 1.8-3 1.9 1.7 3.2 4 3.2 6.6 0 3.6-2.6 6.2-6.5 6.2z\"/></symbol>\n  <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\"><path d=\"M7.5 4h9v5a4.5 4.5 0 0 1-9 0zM7.5 6H4.5c0 2.6 1.3 4 3.3 4.3M16.5 6h3c0 2.6-1.3 4-3.3 4.3M12 13.5V17M8.5 20.5h7M9.5 17h5v3.5h-5z\"/></symbol>\n  <symbol id=\"i-drop\" viewBox=\"0 0 24 24\"><path d=\"M12 3.5c3 3.8 6 7.2 6 10.6a6 6 0 0 1-12 0c0-3.4 3-6.8 6-10.6z\"/></symbol>\n  <symbol id=\"i-scale\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"3.5\" width=\"17\" height=\"17\" rx=\"4\"/><path d=\"M8.5 9.5a5 5 0 0 1 7 0L13 12\"/></symbol>\n  <symbol id=\"i-chart\" viewBox=\"0 0 24 24\"><path d=\"M4 4v16h16M8 15l3.5-4 3 2.5L19 8\"/></symbol>\n  <symbol id=\"i-list\" viewBox=\"0 0 24 24\"><path d=\"M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01\"/></symbol>\n  <symbol id=\"i-more\" viewBox=\"0 0 24 24\"><path d=\"M5.5 12h.01M12 12h.01M18.5 12h.01\"/></symbol>\n  <symbol id=\"i-bolt\" viewBox=\"0 0 24 24\"><path d=\"M13 3 5.5 13.5H12L11 21l7.5-10.5H12z\"/></symbol>\n  <symbol id=\"i-pin\" viewBox=\"0 0 24 24\"><path d=\"M12 21s6.5-6 6.5-11a6.5 6.5 0 0 0-13 0c0 5 6.5 11 6.5 11z\"/><circle cx=\"12\" cy=\"10\" r=\"2.3\"/></symbol>\n  <symbol id=\"i-bulb\" viewBox=\"0 0 24 24\"><path d=\"M9 17.5h6M10 20.5h4M8.3 14.5A6 6 0 1 1 15.7 14.5c-.8.7-1.2 1.6-1.2 2.5v.5h-5V17c0-.9-.4-1.8-1.2-2.5z\"/></symbol>\n  <symbol id=\"i-blinds\" viewBox=\"0 0 24 24\"><path d=\"M4 4h16M5 4v16M19 4v16M5 8h14M5 12h14M5 16h14\"/></symbol>\n  <symbol id=\"i-thermo\" viewBox=\"0 0 24 24\"><path d=\"M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z\"/><path d=\"M12 9v7\"/></symbol>\n  <symbol id=\"i-plug\" viewBox=\"0 0 24 24\"><path d=\"M9 3v5M15 3v5M6.5 8h11v3a5.5 5.5 0 0 1-11 0zM12 16.5V21\"/></symbol>\n  <symbol id=\"i-vacuum\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 3.5v2\"/></symbol>\n  <symbol id=\"i-speaker\" viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"3\" width=\"12\" height=\"18\" rx=\"2\"/><circle cx=\"12\" cy=\"14\" r=\"3.2\"/><path d=\"M12 7h.01\"/></symbol>\n  <symbol id=\"i-coffee\" viewBox=\"0 0 24 24\"><path d=\"M5 9h11v5.5A5.5 5.5 0 0 1 10.5 20h0A5.5 5.5 0 0 1 5 14.5zM16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5c0 1.5 1.5 1.5 1.5 3M12 3.5c0 1.5 1.5 1.5 1.5 3\"/></symbol>\n  <symbol id=\"i-link\" viewBox=\"0 0 24 24\"><path d=\"M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5\"/></symbol>\n  <symbol id=\"i-copy\" viewBox=\"0 0 24 24\"><rect x=\"8.5\" y=\"8.5\" width=\"11\" height=\"11\" rx=\"2\"/><path d=\"M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5\"/></symbol>\n  <symbol id=\"i-calendar\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"5\" width=\"17\" height=\"15.5\" rx=\"2\"/><path d=\"M3.5 10h17M8 3v4M16 3v4\"/></symbol>\n  <symbol id=\"i-sync\" viewBox=\"0 0 24 24\"><path d=\"M19.5 10A7.5 7.5 0 0 0 6 6.5L4.5 8M4.5 14A7.5 7.5 0 0 0 18 17.5l1.5-1.5M4.5 4v4h4M19.5 20v-4h-4\"/></symbol>\n  <symbol id=\"i-camera\" viewBox=\"0 0 24 24\"><path d=\"M4 8h3.5L9 5.5h6L16.5 8H20v11H4z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></symbol>\n  <symbol id=\"i-wallet\" viewBox=\"0 0 24 24\"><path d=\"M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V18a1.5 1.5 0 0 0 1.5 1.5H20V8H6.5A2.5 2.5 0 0 1 4 7.5z\"/><circle cx=\"16\" cy=\"13.75\" r=\"1.2\"/></symbol>\n  <symbol id=\"i-cart\" viewBox=\"0 0 24 24\"><path d=\"M3 4h2.5l2.2 10.5h10.6L20.5 7H6.6\"/><circle cx=\"9\" cy=\"19\" r=\"1.5\"/><circle cx=\"17\" cy=\"19\" r=\"1.5\"/></symbol>\n  <symbol id=\"i-tasks\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"4\" width=\"5\" height=\"5\" rx=\"1.2\"/><path d=\"m4.8 6.5 1 1 1.8-2M11.5 6.5h9M3.5 15h5v5h-5zM11.5 17.5h9\"/></symbol>\n  <symbol id=\"i-grid\" viewBox=\"0 0 24 24\"><rect x=\"4\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"4\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/></symbol>\n  <symbol id=\"i-meter\" viewBox=\"0 0 24 24\"><path d=\"M4.5 16.5a8 8 0 1 1 15 0\"/><path d=\"M12 13.5 15.5 9\"/><circle cx=\"12\" cy=\"14\" r=\"1.3\"/><path d=\"M5 20h14\"/></symbol>\n  <symbol id=\"i-euro\" viewBox=\"0 0 24 24\"><path d=\"M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4.5 10.5h9M4.5 13.5h9\"/></symbol>\n</svg>";
+const SPRITE = "<svg class=\"sprite\" aria-hidden=\"true\" focusable=\"false\">\n  <symbol id=\"i-home\" viewBox=\"0 0 24 24\"><path d=\"M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z\"/></symbol>\n  <symbol id=\"i-gym\" viewBox=\"0 0 24 24\"><path d=\"M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11\"/></symbol>\n  <symbol id=\"i-food\" viewBox=\"0 0 24 24\"><path d=\"M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 21V3c-2.2 1.2-3.5 3.6-3.5 7.5V14H16\"/></symbol>\n  <symbol id=\"i-run\" viewBox=\"0 0 24 24\"><circle cx=\"15\" cy=\"4.5\" r=\"1.8\"/><path d=\"m7 21 3.2-5.2 3 2.2.8 3M6 12l3.2-3.4 3.6.4 2 3.4 3 1.3M10.4 15.8l2.1-6.6\"/></symbol>\n  <symbol id=\"i-house\" viewBox=\"0 0 24 24\"><path d=\"M3.5 10 12 3.5 20.5 10M5.5 8.5V20h13V8.5\"/><path d=\"M10 20v-5.5h4V20\"/></symbol>\n  <symbol id=\"i-tv\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8.5 20.5h7M12 17v3.5\"/></symbol>\n  <symbol id=\"i-settings\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5\"/></symbol>\n  <symbol id=\"i-plus\" viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></symbol>\n  <symbol id=\"i-minus\" viewBox=\"0 0 24 24\"><path d=\"M5 12h14\"/></symbol>\n  <symbol id=\"i-check\" viewBox=\"0 0 24 24\"><path d=\"m5 12.5 4.5 4.5L19 7.5\"/></symbol>\n  <symbol id=\"i-x\" viewBox=\"0 0 24 24\"><path d=\"M6 6l12 12M18 6 6 18\"/></symbol>\n  <symbol id=\"i-left\" viewBox=\"0 0 24 24\"><path d=\"m14.5 6-6 6 6 6\"/></symbol>\n  <symbol id=\"i-right\" viewBox=\"0 0 24 24\"><path d=\"m9.5 6 6 6-6 6\"/></symbol>\n  <symbol id=\"i-up\" viewBox=\"0 0 24 24\"><path d=\"m6 14.5 6-6 6 6\"/></symbol>\n  <symbol id=\"i-down\" viewBox=\"0 0 24 24\"><path d=\"m6 9.5 6 6 6-6\"/></symbol>\n  <symbol id=\"i-trash\" viewBox=\"0 0 24 24\"><path d=\"M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10.5 11v5.5M13.5 11v5.5\"/></symbol>\n  <symbol id=\"i-edit\" viewBox=\"0 0 24 24\"><path d=\"M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4\"/></symbol>\n  <symbol id=\"i-timer\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"13.5\" r=\"7.5\"/><path d=\"M12 9.5v4l2.5 2M9.5 2.8h5M19 6.5l1.5-1.5\"/></symbol>\n  <symbol id=\"i-play\" viewBox=\"0 0 24 24\"><path d=\"M7.5 5v14l11-7z\"/></symbol>\n  <symbol id=\"i-pause\" viewBox=\"0 0 24 24\"><path d=\"M8 5v14M16 5v14\"/></symbol>\n  <symbol id=\"i-stop\" viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"6\" width=\"12\" height=\"12\" rx=\"1.5\"/></symbol>\n  <symbol id=\"i-search\" viewBox=\"0 0 24 24\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m15.5 15.5 5 5\"/></symbol>\n  <symbol id=\"i-barcode\" viewBox=\"0 0 24 24\"><path d=\"M3 5v14M6 5v14M9.5 5v14M11.5 5v14M15 5v14M18 5v14M21 5v14\"/></symbol>\n  <symbol id=\"i-flame\" viewBox=\"0 0 24 24\"><path d=\"M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-4 3.3-6 3.8-9.8 2.6 1.5 4 3.7 4.2 6.2 1-.6 1.6-1.6 1.8-3 1.9 1.7 3.2 4 3.2 6.6 0 3.6-2.6 6.2-6.5 6.2z\"/></symbol>\n  <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\"><path d=\"M7.5 4h9v5a4.5 4.5 0 0 1-9 0zM7.5 6H4.5c0 2.6 1.3 4 3.3 4.3M16.5 6h3c0 2.6-1.3 4-3.3 4.3M12 13.5V17M8.5 20.5h7M9.5 17h5v3.5h-5z\"/></symbol>\n  <symbol id=\"i-drop\" viewBox=\"0 0 24 24\"><path d=\"M12 3.5c3 3.8 6 7.2 6 10.6a6 6 0 0 1-12 0c0-3.4 3-6.8 6-10.6z\"/></symbol>\n  <symbol id=\"i-scale\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"3.5\" width=\"17\" height=\"17\" rx=\"4\"/><path d=\"M8.5 9.5a5 5 0 0 1 7 0L13 12\"/></symbol>\n  <symbol id=\"i-chart\" viewBox=\"0 0 24 24\"><path d=\"M4 4v16h16M8 15l3.5-4 3 2.5L19 8\"/></symbol>\n  <symbol id=\"i-list\" viewBox=\"0 0 24 24\"><path d=\"M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01\"/></symbol>\n  <symbol id=\"i-more\" viewBox=\"0 0 24 24\"><path d=\"M5.5 12h.01M12 12h.01M18.5 12h.01\"/></symbol>\n  <symbol id=\"i-bolt\" viewBox=\"0 0 24 24\"><path d=\"M13 3 5.5 13.5H12L11 21l7.5-10.5H12z\"/></symbol>\n  <symbol id=\"i-pin\" viewBox=\"0 0 24 24\"><path d=\"M12 21s6.5-6 6.5-11a6.5 6.5 0 0 0-13 0c0 5 6.5 11 6.5 11z\"/><circle cx=\"12\" cy=\"10\" r=\"2.3\"/></symbol>\n  <symbol id=\"i-bulb\" viewBox=\"0 0 24 24\"><path d=\"M9 17.5h6M10 20.5h4M8.3 14.5A6 6 0 1 1 15.7 14.5c-.8.7-1.2 1.6-1.2 2.5v.5h-5V17c0-.9-.4-1.8-1.2-2.5z\"/></symbol>\n  <symbol id=\"i-blinds\" viewBox=\"0 0 24 24\"><path d=\"M4 4h16M5 4v16M19 4v16M5 8h14M5 12h14M5 16h14\"/></symbol>\n  <symbol id=\"i-thermo\" viewBox=\"0 0 24 24\"><path d=\"M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z\"/><path d=\"M12 9v7\"/></symbol>\n  <symbol id=\"i-plug\" viewBox=\"0 0 24 24\"><path d=\"M9 3v5M15 3v5M6.5 8h11v3a5.5 5.5 0 0 1-11 0zM12 16.5V21\"/></symbol>\n  <symbol id=\"i-vacuum\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 3.5v2\"/></symbol>\n  <symbol id=\"i-speaker\" viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"3\" width=\"12\" height=\"18\" rx=\"2\"/><circle cx=\"12\" cy=\"14\" r=\"3.2\"/><path d=\"M12 7h.01\"/></symbol>\n  <symbol id=\"i-coffee\" viewBox=\"0 0 24 24\"><path d=\"M5 9h11v5.5A5.5 5.5 0 0 1 10.5 20h0A5.5 5.5 0 0 1 5 14.5zM16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5c0 1.5 1.5 1.5 1.5 3M12 3.5c0 1.5 1.5 1.5 1.5 3\"/></symbol>\n  <symbol id=\"i-link\" viewBox=\"0 0 24 24\"><path d=\"M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5\"/></symbol>\n  <symbol id=\"i-copy\" viewBox=\"0 0 24 24\"><rect x=\"8.5\" y=\"8.5\" width=\"11\" height=\"11\" rx=\"2\"/><path d=\"M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5\"/></symbol>\n  <symbol id=\"i-calendar\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"5\" width=\"17\" height=\"15.5\" rx=\"2\"/><path d=\"M3.5 10h17M8 3v4M16 3v4\"/></symbol>\n  <symbol id=\"i-sync\" viewBox=\"0 0 24 24\"><path d=\"M19.5 10A7.5 7.5 0 0 0 6 6.5L4.5 8M4.5 14A7.5 7.5 0 0 0 18 17.5l1.5-1.5M4.5 4v4h4M19.5 20v-4h-4\"/></symbol>\n  <symbol id=\"i-camera\" viewBox=\"0 0 24 24\"><path d=\"M4 8h3.5L9 5.5h6L16.5 8H20v11H4z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></symbol>\n  <symbol id=\"i-wallet\" viewBox=\"0 0 24 24\"><path d=\"M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V18a1.5 1.5 0 0 0 1.5 1.5H20V8H6.5A2.5 2.5 0 0 1 4 7.5z\"/><circle cx=\"16\" cy=\"13.75\" r=\"1.2\"/></symbol>\n  <symbol id=\"i-cart\" viewBox=\"0 0 24 24\"><path d=\"M3 4h2.5l2.2 10.5h10.6L20.5 7H6.6\"/><circle cx=\"9\" cy=\"19\" r=\"1.5\"/><circle cx=\"17\" cy=\"19\" r=\"1.5\"/></symbol>\n  <symbol id=\"i-tasks\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"4\" width=\"5\" height=\"5\" rx=\"1.2\"/><path d=\"m4.8 6.5 1 1 1.8-2M11.5 6.5h9M3.5 15h5v5h-5zM11.5 17.5h9\"/></symbol>\n  <symbol id=\"i-grid\" viewBox=\"0 0 24 24\"><rect x=\"4\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"4\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/></symbol>\n  <symbol id=\"i-meter\" viewBox=\"0 0 24 24\"><path d=\"M4.5 16.5a8 8 0 1 1 15 0\"/><path d=\"M12 13.5 15.5 9\"/><circle cx=\"12\" cy=\"14\" r=\"1.3\"/><path d=\"M5 20h14\"/></symbol>\n  <symbol id=\"i-euro\" viewBox=\"0 0 24 24\"><path d=\"M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4.5 10.5h9M4.5 13.5h9\"/></symbol>\n  <symbol id=\"i-pulse\" viewBox=\"0 0 24 24\"><path d=\"M3 12.5h4l2.2-5 3.6 10 2.4-6.5 1.3 1.5H21\"/></symbol>\n</svg>";
 /* =====================================================================
    Grundbausteine: Hilfsfunktionen, Speicher, Sync, Router, Dialoge
    ===================================================================== */
@@ -210,7 +210,8 @@ const DEFAULT_SETTINGS = {
   height: 183, birthYear: 1999, sex: 'm', activity: 1.55, goalType: 'halten',
   tvUrl: 'http://192.168.192.65:8090/',
   haUrl: '',
-  seenWelcome: false
+  seenWelcome: false,
+  noop: false
 };
 function settings() { return Object.assign({}, DEFAULT_SETTINGS, Store.get('settings', {}) || {}); }
 function saveSettings(patch) { Store.set('settings', Object.assign({}, Store.get('settings', {}) || {}, patch)); applyTheme(); }
@@ -1047,6 +1048,7 @@ V.heute = {
         ${tile('planer', 'Planer', `${due.length}<small>${due.length === 1 ? 'Aufgabe' : 'Aufgaben'}</small>`, next ? `Nächster Termin: ${fmtDate(next.k, { day: true })}${next.e.time ? ' ' + next.e.time : ''}` : shopOpen ? `${shopOpen} Dinge auf der Einkaufsliste` : 'heute fällig')}
       </nav>
       <div class="grid">
+        ${noopCard()}
         <div class="card span-6"><div class="card-head"><h2>${icon('calendar')}Heute</h2><a class="btn btn-ghost btn-s" href="planer.html">Planer</a></div>
           ${evToday.length ? `<div class="list">${evToday.map(e => eventRow(e)).join('')}</div>` : ''}
           ${due.length ? `<div class="tasks" style="margin-top:${evToday.length ? 10 : 0}px">${due.slice(0, 6).map(taskRow).join('')}</div>` : ''}
@@ -1230,7 +1232,7 @@ function renderActive() {
   const vol = sum(a.items.map(it => sum(it.sets.filter(s => s.done && s.type !== 'w').map(s => num(s.kg) * num(s.reps)))));
   return `<div class="wo-head"><div class="grow"><input class="wo-title" value="${esc(a.name)}" data-input="woName" aria-label="Name des Trainings">
       <div class="wo-clock"><span data-tick="wo">${fmtDur((Date.now() - a.start) / 1000)}</span> · ${done} ${done === 1 ? 'Satz' : 'Sätze'} · ${fmt(vol)} kg</div></div>
-      <button class="btn btn-primary" data-act="woFinish">Beenden</button></div>
+      ${Noop.on() ? `<a class="btn btn-s" href="noop://open" title="NOOP öffnen und dort das Workout starten">${icon('pulse', 'ic-s')}NOOP</a>` : ''}<button class="btn btn-primary" data-act="woFinish">Beenden</button></div>
     <div class="ex-list">${items || `<div class="card">${emptyState('gym', 'Füge deine erste Übung hinzu.')}</div>`}</div>
     <div class="stack" style="margin-top:16px">
       <button class="btn btn-l btn-block" data-act="woAddEx">${icon('plus')}Übung hinzufügen</button>
@@ -1337,7 +1339,8 @@ function finishWorkout() {
     <div class="nutri-grid"><div><b>${fmtMin(woDuration(w))}</b><span>Dauer</span></div><div><b>${fmt(woVolume(w))}</b><span>kg Volumen</span></div>
     <div><b>${workSets(w).length}</b><span>Arbeitssätze</span></div><div><b>${Object.keys(best).length}</b><span>Rekorde</span></div></div>
     ${Object.keys(best).length ? `<div class="list">${Object.values(best).map(p => `<div class="li"><span class="badge-pr">${icon('trophy', 'ic-s')}PR</span><div class="li-main"><div class="li-title">${esc(Exercises.get(p.ex).name)}</div><div class="li-sub">${fmt(p.s.kg, 2)} kg × ${p.s.reps}</div></div><div class="li-end">${fmt(p.v, 1)} kg 1RM</div></div>`).join('')}</div>` : ''}
-    <div class="sheet-actions">${a.tpl ? '' : `<button class="btn" data-act="tplFromWorkout" data-id="${w.id}">Als Plan speichern</button>`}<button class="btn btn-primary" data-act="closeSheet">Fertig</button></div>`);
+    ${Noop.on() ? '<p class="small muted">Mit „An NOOP senden“ landet das Training mit Start, Ende und Kalorien in NOOP.</p>' : ''}
+    <div class="sheet-actions">${Noop.workoutLink(w)}${a.tpl ? '' : `<button class="btn" data-act="tplFromWorkout" data-id="${w.id}">Als Plan speichern</button>`}<button class="btn btn-primary" data-act="closeSheet">Fertig</button></div>`);
   void before;
 }
 
@@ -1492,7 +1495,7 @@ function renderWorkoutDetail(id) {
   const prs = prEvents().filter(p => p.w === w.id);
   return `<a class="btn btn-ghost btn-s" href="#/training/verlauf" style="margin-bottom:10px">${icon('left', 'ic-s')}Verlauf</a>
     ${pageHead(esc(w.name), `${fmtDate(w.start, { day: true, plain: true })} · ${fmtTime(w.start)}–${fmtTime(w.end)} Uhr`,
-      `<button class="btn" data-act="woRepeat" data-id="${w.id}">${icon('play')}Wiederholen</button><button class="btn" data-act="tplFromWorkout" data-id="${w.id}">Als Plan</button><button class="icon-btn bordered" data-act="woDelete" data-id="${w.id}" aria-label="Training löschen">${icon('trash')}</button>`)}
+      `${Noop.workoutLink(w)}<button class="btn" data-act="woRepeat" data-id="${w.id}">${icon('play')}Wiederholen</button><button class="btn" data-act="tplFromWorkout" data-id="${w.id}">Als Plan</button><button class="icon-btn bordered" data-act="woDelete" data-id="${w.id}" aria-label="Training löschen">${icon('trash')}</button>`)}
     <div class="kpis"><div class="card"><div class="stat-label">Dauer</div><div class="stat-value">${fmtMin(woDuration(w))}</div></div>
       <div class="card"><div class="stat-label">Volumen</div><div class="stat-value">${fmt(woVolume(w))}<small>kg</small></div></div>
       <div class="card"><div class="stat-label">Arbeitssätze</div><div class="stat-value">${workSets(w).length}</div></div>
@@ -2464,7 +2467,7 @@ function renderRunDetail(id) {
   if (!r) return `<div class="card">${emptyState('run', 'Lauf nicht gefunden.')}</div>`;
   const splits = r.splits || [];
   return `<a class="btn btn-ghost btn-s" href="#/laufen/verlauf" style="margin-bottom:10px">${icon('left', 'ic-s')}Alle Läufe</a>
-    ${pageHead(`${fmt(r.km, 2)} km ${esc(r.type || '')}`, `${fmtDate(r.start, { day: true, plain: true })} · ${fmtTime(r.start)} Uhr`, `<a class="btn" href="#/laufen/eintragen/${r.id}">${icon('edit')}Bearbeiten</a>`)}
+    ${pageHead(`${fmt(r.km, 2)} km ${esc(r.type || '')}`, `${fmtDate(r.start, { day: true, plain: true })} · ${fmtTime(r.start)} Uhr`, `${Noop.runLink(r)}<a class="btn" href="#/laufen/eintragen/${r.id}">${icon('edit')}Bearbeiten</a>`)}
     <div class="kpis"><div class="card"><div class="stat-label">Zeit</div><div class="stat-value">${fmtDur(r.sec)}</div></div>
       <div class="card"><div class="stat-label">Pace</div><div class="stat-value">${fmtPace(r.sec / r.km)}<small>/km</small></div></div>
       <div class="card"><div class="stat-label">Tempo</div><div class="stat-value">${fmt(r.km / (r.sec / 3600), 1)}<small>km/h</small></div></div>
@@ -2618,6 +2621,7 @@ function renderLive() {
       `<div class="row" style="justify-content:center">${s.status === 'running' ? `<button class="btn btn-l" data-act="livePause">${icon('pause')}Pause</button>` : `<button class="btn btn-l btn-primary" data-act="liveResume">${icon('play')}Weiter</button>`}
         <button class="btn btn-l" data-act="liveStop">${icon('stop')}Beenden</button></div>
         <button class="btn btn-ghost btn-danger btn-s" style="margin-top:10px" data-act="liveDiscard">Verwerfen</button>`}
+    ${Noop.on() ? `<a class="btn btn-ghost btn-s" style="margin-top:10px" href="noop://open">${icon('pulse', 'ic-s')}NOOP öffnen und dort mitstarten</a>` : ''}
     <div class="list" id="liveSplits" style="margin-top:14px;text-align:left"></div></div>`;
 }
 
@@ -3258,6 +3262,144 @@ V.planer = {
 };
 
 /* =====================================================================
+   NOOP (WHOOP-App, github.com/ryanbr/noop):
+   - Trainings und Läufe per Link noop://import-health an NOOP schicken
+   - Schritte, Puls und HRV aus NOOPs Datei noop_sync.txt einlesen
+   ===================================================================== */
+const Noop = {
+  on() { return !!settings().noop; },
+  // Zeile im NOOP-Format: W,startUnix,endUnix,sport,durationS,energyKcal,distanceM
+  workoutLine(w) {
+    const s = Math.round(w.start / 1000), e = Math.round((w.end || w.start) / 1000);
+    const kcal = Math.round(5.0 * Body.weightOr(80) * ((e - s) / 3600));
+    return `W,${s},${e},Strength,${e - s},${kcal},`;
+  },
+  runLine(r) {
+    const s = Math.round(r.start / 1000), e = s + Math.round(r.sec);
+    const kcal = Math.round(r.km * Body.weightOr(80));
+    return `W,${s},${e},${r.type === 'Laufband' ? 'Treadmill run' : 'Running'},${Math.round(r.sec)},${kcal},${Math.round(r.km * 1000)}`;
+  },
+  url(lines) {
+    const b64 = btoa(lines.join('\n'));
+    return 'noop://import-health?v=1&payload=' + encodeURIComponent(b64);
+  },
+  link(lines, keys, label, cls) {
+    return `<a class="btn ${cls || ''}" href="${this.url(lines)}" data-noop="${esc(keys.join(','))}">${icon('link')}${label || 'An NOOP senden'}</a>`;
+  },
+  workoutLink(w, cls) { return this.on() && w && w.end ? this.link([this.workoutLine(w)], ['w:' + w.id], w.noopSent ? 'Nochmal an NOOP' : 'An NOOP senden', cls) : ''; },
+  runLink(r, cls) { return this.on() && r ? this.link([this.runLine(r)], ['r:' + r.id], r.noopSent ? 'Nochmal an NOOP' : 'An NOOP senden', cls) : ''; },
+  unsent() {
+    return Workouts.all().filter(w => w.end && !w.noopSent && !w.demo).map(w => ['w:' + w.id, this.workoutLine(w)])
+      .concat(Runs.all().filter(r => !r.noopSent && !r.demo).map(r => ['r:' + r.id, this.runLine(r)]));
+  },
+  markSent(keys) {
+    keys.forEach(k => {
+      const [t, id] = [k.slice(0, 1), k.slice(2)];
+      const item = t === 'w' ? Workouts.get(id) : Runs.get(id);
+      if (item) { item.noopSent = Date.now(); (t === 'w' ? Workouts : Runs).save(item); }
+    });
+  },
+
+  /* ---------- Einlesen: Zeilen „HR,HRV,Schritte,yyyy-MM-dd HH:mm“ (15-Minuten-Fenster) ---------- */
+  importText(text) {
+    const buckets = {};
+    let rows = 0;
+    String(text || '').split(/\r?\n/).forEach(line => {
+      const m = line.trim().match(/^(\d*(?:\.\d+)?),(\d*(?:\.\d+)?),(\d*),(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
+      if (!m) return;
+      const [, hr, hrv, steps, day, time] = m;
+      const key = 'noop-' + day.slice(0, 7);
+      const b = buckets[key] = buckets[key] || Object.assign({}, Store.get(key, {}) || {});
+      b[day] = Object.assign({}, b[day] || {});
+      b[day][time] = [hr === '' ? null : +hr, hrv === '' ? null : +hrv, steps === '' ? null : +steps];
+      rows++;
+    });
+    Object.keys(buckets).forEach(k => Store.set(k, buckets[k]));
+    if (rows) Store.set('noopMeta', { lastImport: Date.now(), rows });
+    return rows;
+  },
+  day(k) {
+    const slots = (Store.get('noop-' + k.slice(0, 7), {}) || {})[k];
+    if (!slots) return null;
+    const v = Object.keys(slots).sort().map(t => [t].concat(slots[t]));
+    const hr = v.map(x => x[1]).filter(x => x != null), hrv = v.map(x => x[2]).filter(x => x != null), st = v.map(x => x[3]).filter(x => x != null);
+    return {
+      steps: sum(st), hasSteps: st.length > 0,
+      hrAvg: hr.length ? sum(hr) / hr.length : null, hrMin: hr.length ? Math.min(...hr) : null,
+      hrv: hrv.length ? sum(hrv) / hrv.length : null, last: v.length ? v[v.length - 1][0] : null, slots: v.length
+    };
+  },
+  hasData() { return Store.keys('noop-').length > 0; }
+};
+// Gesendet merken, ohne den Link selbst zu blockieren
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-noop]');
+  if (!a) return;
+  const keys = a.dataset.noop.split(',').filter(Boolean);
+  setTimeout(() => { Noop.markSent(keys); toast('In NOOP auf „Import“ tippen'); }, 400);
+}, true);
+
+/* Karte für die Startseite */
+function noopCard() {
+  if (!Noop.on() && !Noop.hasData()) return '';
+  const t = todayKey(), today = Noop.day(t);
+  const meta = Store.get('noopMeta', null);
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const k = addDays(t, -i), d = Noop.day(k);
+    days.push({ label: DAYS[parseKey(k).getDay()], value: d ? d.steps : 0, strong: i === 0, tip: `<b>${d ? fmt(d.steps) : 0} Schritte</b><br>${esc(fmtDate(k, { day: true, plain: true }))}${d && d.hrAvg ? `<br>Ø Puls ${fmt(d.hrAvg)} · HRV ${d.hrv ? fmt(d.hrv) + ' ms' : '–'}` : ''}` });
+  }
+  const week = days.filter(x => x.value > 0);
+  return `<div class="card span-12"><div class="card-head"><h2>${icon('pulse')}Körper · NOOP</h2>
+      <label class="btn btn-s" style="cursor:pointer">${icon('sync', 'ic-s')}Daten laden<input type="file" accept=".txt,text/plain" data-change="noopFile" hidden></label></div>
+    <p class="tiny muted" style="margin:-6px 0 12px">${meta ? 'Zuletzt geladen ' + fmtDate(meta.lastImport) + ', ' + fmtTime(meta.lastImport) + ' Uhr' : 'Noch keine Daten geladen'}</p>
+    ${Noop.hasData() ? `<div class="grid" style="gap:12px">
+      <div class="span-5"><div class="nutri-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div><b>${today && today.hasSteps ? fmt(today.steps) : '–'}</b><span>Schritte heute${today && today.last ? ' bis ' + today.last : ''}</span></div>
+        <div><b>${week.length ? fmt(sum(week.map(x => x.value)) / week.length) : '–'}</b><span>Ø Schritte 7 Tage</span></div>
+        <div><b>${today && today.hrMin ? fmt(today.hrMin) : '–'}</b><span>niedrigster Puls heute</span></div>
+        <div><b>${today && today.hrv ? fmt(today.hrv) : '–'}</b><span>Ø HRV heute (ms)</span></div></div></div>
+      <div class="span-7">${Charts.slot({ type: 'bars', bars: days, height: 170, label: 'Schritte der letzten 7 Tage', yFmt: v => fmt(v), empty: 'Noch keine Schritte geladen' })}</div></div>`
+    : `<p class="muted">Lade die Datei <b>noop_sync.txt</b> aus NOOP (oder deinen Kurzbefehl-Verlauf), dann erscheinen hier Schritte, Puls und HRV. Wie das automatisch geht, steht unter Einstellungen → NOOP.</p>`}</div>`;
+}
+A.noopFile = el => {
+  const file = el.files && el.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const n = Noop.importText(r.result);
+    toast(n ? `${n} Messwerte aus NOOP übernommen` : 'Keine NOOP-Werte in der Datei (vielleicht schon leer?)');
+    rerender();
+  };
+  r.readAsText(file);
+};
+A.noopPaste = () => Sheet.open(`${sheetHead('NOOP-Werte einfügen', 'Inhalt von noop_sync.txt')}
+  <form class="stack" data-submit="noopPasteSave"><textarea class="input" name="text" rows="8" placeholder="72,48.5,310,2026-11-06 14:15" autofocus></textarea>
+  <div class="sheet-actions"><button type="button" class="btn" data-act="closeSheet">Abbrechen</button><button class="btn btn-primary">Übernehmen</button></div></form>`);
+A.noopPasteSave = f => { const n = Noop.importText(formData(f).text); Sheet.close(); toast(n ? `${n} Messwerte übernommen` : 'Keine NOOP-Zeilen erkannt'); rerender(); };
+
+/* Einstellungs-Karte */
+function noopSettingsCard() {
+  const s = settings(), unsent = Noop.unsent();
+  return `<div class="card span-12"><div class="card-head"><h2>${icon('pulse')}NOOP (WHOOP-Band)</h2><span class="chip${s.noop ? ' chip-accent' : ''}">${s.noop ? 'verbunden' : 'aus'}</span></div>
+    <div class="stack">
+      <label class="check"><input type="checkbox" data-change="noopToggle"${s.noop ? ' checked' : ''}> NOOP-Verbindung nutzen</label>
+      <p class="small muted">Trainings und Läufe aus dem Dashboard gehen per Link an NOOP („Apple Health“-Quelle in NOOP). NOOP fragt jedes Mal „Import?“, dort einmal bestätigen. Ein Workout live in NOOP mitstarten lässt NOOP von außen nicht zu – dafür gibt es beim Start den Knopf „NOOP öffnen“.</p>
+      ${s.noop ? `<div class="row wrap">${unsent.length ? Noop.link(unsent.map(x => x[1]), unsent.map(x => x[0]), `${unsent.length} offene an NOOP senden`, 'btn-primary') : '<span class="small muted">Alle Trainings und Läufe sind an NOOP gesendet.</span>'}
+        <a class="btn" href="noop://open">${icon('link')}NOOP öffnen</a></div>` : ''}
+      <hr class="divider">
+      <h3>Schritte, Puls und HRV aus NOOP</h3>
+      <div class="row wrap"><label class="btn" style="cursor:pointer">${icon('sync')}Datei laden<input type="file" accept=".txt,text/plain" data-change="noopFile" hidden></label>
+        <button class="btn" data-act="noopPaste">Text einfügen</button></div>
+      <ol class="steps small">
+        <li>In NOOP: Einstellungen → „Export for Shortcuts (Apple Health)“ einschalten. NOOP schreibt dann beim Verlassen der App die Datei <b>Auf meinem iPhone › NOOP › noop_sync.txt</b>.</li>
+        <li>Die Datei enthält nur die neuen Werte seit dem letzten Mal. Damit nichts verloren geht, in der Kurzbefehle-App eine Automation anlegen: „App → NOOP → wird geschlossen“ → „Datei abrufen“ (noop_sync.txt) → „An Textdatei anhängen“ an <b>iCloud Drive › Dashboard › noop-verlauf.txt</b>.</li>
+        <li>Hier oder auf der Startseite „Daten laden“ tippen und noop-verlauf.txt wählen. Doppelte Werte werden erkannt.</li></ol>
+    </div></div>`;
+}
+A.noopToggle = el => { saveSettings({ noop: el.checked }); rerender(); };
+
+/* =====================================================================
    Einstellungen und Datenverwaltung
    ===================================================================== */
 V.einstellungen = {
@@ -3282,6 +3424,7 @@ V.einstellungen = {
           <label class="field">Home Assistant (Langzeit-Token)<input class="input" type="password" name="haToken" value="${esc(Local.get('haToken', ''))}" autocomplete="off" placeholder="nur auf diesem Gerät gespeichert"></label>
           <p class="tiny muted">Das Token bleibt nur in diesem Browser und wird nie synchronisiert oder exportiert.</p>
           <button class="btn btn-primary">Speichern</button></form></div>
+      ${noopSettingsCard()}
       <div class="card span-12"><div class="card-head"><h2>${icon('sync')}Daten</h2><span class="muted small" data-sync>${esc(syncText())}</span></div>
         <p class="muted" style="margin-bottom:14px">${counts}</p>
         <div class="row wrap">
