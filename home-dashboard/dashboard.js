@@ -2827,8 +2827,8 @@ function renderFinDash() {
       <button class="quick-btn" data-act="spendNew"><span class="qi">${icon('plus')}</span><span>Ausgabe eintragen<small>in 5 Sekunden</small></span></button>
       <button class="quick-btn" data-act="fixEdit"><span class="qi">${icon('calendar')}</span><span>Fixkosten<small>Vertrag hinzufügen</small></span></button>
       <button class="quick-btn" data-act="meterNew"><span class="qi">${icon('meter')}</span><span>Zählerstand<small>Strom, Wasser, Heizung</small></span></button>
-      ${fgLoadBtn(`<span class="qi">${icon('sync')}</span><span>Finanzguru laden<small>${fg ? 'zuletzt ' + fmtDate(fg.loaded) : 'Export-Datei wählen'}</small></span>`, 'quick-btn', true)}</div>
-    ${fg ? `<p class="small muted" style="margin:-8px 4px 16px">Finanzguru-Export „${esc(fg.file)}“ · Umsätze vom ${fmtDate(fg.from, { plain: true })} bis ${fmtDate(fg.to, { plain: true })} · ${fg.added} neu übernommen${fg.dup ? `, ${fg.dup} schon vorhanden` : ''}${fg.skipped ? `, ${fg.skipped} Umbuchungen ausgelassen` : ''}</p>` : ''}
+      ${fgLoadBtn(`<span class="qi">${icon('sync')}</span><span>Kontoumsätze laden<small>${fg ? 'zuletzt ' + fmtDate(fg.loaded) : 'CSV aus dem Online-Banking'}</small></span>`, 'quick-btn', true)}</div>
+    ${fg ? `<p class="small muted" style="margin:-8px 4px 16px">Umsätze aus „${esc(fg.file)}“ · Umsätze vom ${fmtDate(fg.from, { plain: true })} bis ${fmtDate(fg.to, { plain: true })} · ${fg.added} neu übernommen${fg.dup ? `, ${fg.dup} schon vorhanden` : ''}${fg.skipped ? `, ${fg.skipped} Umbuchungen ausgelassen` : ''}</p>` : ''}
     <div class="grid">
       <div class="card span-7"><div class="card-head"><h2>${icon('chart')}Ausgaben pro Monat</h2><span class="muted small">ohne Fixkosten</span></div>
         ${Charts.slot({ type: 'bars', bars: months, height: 220, yFmt: v => fmt(v) + ' €', label: 'Ausgaben pro Monat', empty: 'Trag deine erste Ausgabe ein.' })}</div>
@@ -2854,7 +2854,7 @@ function renderSpending() {
   list.forEach(e => { (groups[e.date] = groups[e.date] || []).push(e); });
   return `<div class="row-between wrap" style="margin-bottom:16px"><div class="date-nav"><button class="icon-btn bordered" data-act="finMonth" data-d="-1" aria-label="Vorheriger Monat">${icon('left')}</button>
       <b>${monthName(finMonth)}</b><button class="icon-btn bordered" data-act="finMonth" data-d="1" aria-label="Nächster Monat"${finMonth >= todayKey().slice(0, 7) ? ' disabled' : ''}>${icon('right')}</button></div>
-      <div class="row">${fgLoadBtn('Finanzguru laden')}<button class="btn btn-primary" data-act="spendNew">${icon('plus')}Ausgabe</button></div></div>
+      <div class="row">${fgLoadBtn('Umsätze laden')}<button class="btn btn-primary" data-act="spendNew">${icon('plus')}Ausgabe</button></div></div>
     <div class="grid"><div class="card span-5"><div class="card-head"><h2>${icon('wallet')}Budget</h2><button class="btn btn-ghost btn-s" data-act="budgetEdit">Bearbeiten</button></div>
       <p class="stat-value" style="margin:0 0 12px">${eur(Finance.spent(finMonth))}<small>${sum(Object.values(budget)) ? ' von ' + eur(sum(Object.values(budget))) : ''}</small></p>
       <div class="stack">${cats.map(c => {
@@ -2939,14 +2939,14 @@ A.fixSave = form => {
 };
 A.fixDelete = el => { Finance.saveFixed(Finance.fixed().filter(x => x.id !== el.dataset.id)); Sheet.close(); rerender(); };
 
-/* Wiederkehrende Abbuchungen aus dem Finanzguru-Export als Fixkosten vorschlagen */
+/* Wiederkehrende Abbuchungen aus den Kontoumsätzen als Fixkosten vorschlagen */
 function fgSuggestCard(cls, spaced) {
   const fg = Store.get('fgMeta', null);
   if (!fg || !fg.recurring || !fg.recurring.length) return '';
   const have = new Set(Finance.fixed().map(f => f.name.toLowerCase()));
   const open = fg.recurring.filter(r => !have.has(String(r.name).toLowerCase()) && !(Store.get('fgIgnored', []) || []).includes(r.key));
   if (!open.length) return '';
-  return `<div class="card ${cls}"${spaced ? ' style="margin-bottom:16px"' : ''}><div class="card-head"><h2>${icon('calendar')}Wiederkehrend laut Konto</h2><span class="muted small">aus Finanzguru erkannt</span></div>
+  return `<div class="card ${cls}"${spaced ? ' style="margin-bottom:16px"' : ''}><div class="card-head"><h2>${icon('calendar')}Wiederkehrend laut Konto</h2><span class="muted small">aus deinen Kontoumsätzen</span></div>
     <div class="list wrap-sub">${open.slice(0, 8).map(r => `<div class="li"><div class="li-main"><div class="li-title">${esc(r.name)}</div><div class="li-sub">in ${r.count} Monaten · zuletzt ${fmtDate(r.last)}</div></div>
       <span class="li-end">${eur(r.amount)}</span><button class="btn btn-s" data-act="fgTake" data-k="${esc(r.key)}">Übernehmen</button><button class="set-del" data-act="fgIgnore" data-k="${esc(r.key)}" aria-label="Nicht übernehmen">${icon('x', 'ic-s')}</button></div>`).join('')}</div></div>`;
 }
@@ -2956,7 +2956,7 @@ A.fgTake = el => {
   const r = (Store.get('fgMeta', {}).recurring || []).find(x => x.key === el.dataset.k);
   if (!r) return;
   const g = FIX_GUESS.find(([, re]) => re.test(r.name));
-  Finance.saveFixed(Finance.fixed().concat([{ id: uid(), name: r.name, amount: r.amount, interval: 'm', cat: g ? g[0] : 'Sonstiges', day: +r.last.slice(8) || '', startMonth: '', note: 'aus Finanzguru', active: true }]));
+  Finance.saveFixed(Finance.fixed().concat([{ id: uid(), name: r.name, amount: r.amount, interval: 'm', cat: g ? g[0] : 'Sonstiges', day: +r.last.slice(8) || '', startMonth: '', note: 'aus Kontoumsätzen', active: true }]));
   toast(`${r.name} als Fixkosten übernommen`); rerender();
 };
 A.fgIgnore = el => { Store.set('fgIgnored', (Store.get('fgIgnored', []) || []).concat([el.dataset.k])); rerender(); };
@@ -3009,19 +3009,23 @@ V.finanzen = {
 };
 
 /* =====================================================================
-   Finanzguru-Export (Excel .xlsx oder CSV) in die Finanzen übernehmen.
-   Spalten laut Export: Name Referenzkonto, Buchungstag,
-   Beguenstigter/Auftraggeber, Verwendungszweck, Betrag (+ ggf. Kategorie)
+   Kontoumsätze in die Finanzen übernehmen: CSV aus dem Online-Banking
+   (Sparkasse, Volksbank, DKB, ING, N26, Comdirect, Commerzbank, Postbank …)
+   oder der Finanzguru-Export (.xlsx/.csv, nur mit Finanzguru Plus)
    ===================================================================== */
 const FgImport = (() => {
   const norm = s => String(s || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]/g, '');
   const COLS = {
-    date: ['buchungstag', 'buchungsdatum', 'datum', 'valuta', 'wertstellung'],
-    amount: ['betrag', 'betrageur', 'umsatz'],
-    payee: ['beguenstigterauftraggeber', 'beguenstigter', 'auftraggeber', 'empfaenger', 'zahlungsempfaenger', 'name', 'gegenpartei'],
-    memo: ['verwendungszweck', 'buchungstext', 'beschreibung'],
-    account: ['namereferenzkonto', 'referenzkonto', 'konto', 'kontoname'],
-    category: ['analysehauptkategorie', 'hauptkategorie', 'kategorie', 'analysekategorie'],
+    date: ['buchungstag', 'buchungsdatum', 'buchung', 'bookingdate', 'datum', 'date', 'valutadatum', 'valuta', 'wertstellung'],
+    amount: ['betrag', 'betrageur', 'umsatzineur', 'umsatz', 'amounteur', 'amount'],
+    payee: ['beguenstigterauftraggeber', 'beguenstigterzahlungspflichtiger', 'auftraggeberempfaenger', 'namezahlungsbeteiligter', 'zahlungsbeteiligter',
+      'beguenstigter', 'auftraggeber', 'empfaenger', 'zahlungsempfaenger', 'partnername', 'payee', 'name', 'gegenpartei'],
+    payeeOut: ['zahlungsempfaengerin', 'zahlungsempfaenger'],      // DKB: getrennte Spalten für Empfänger …
+    payeeIn: ['zahlungspflichtiger', 'zahlungspflichtige'],        // … und Zahler
+    memo: ['verwendungszweck', 'paymentreference', 'beschreibung', 'buchungstext'],
+    kind: ['buchungstext', 'umsatzart', 'umsatztyp', 'vorgang', 'transactiontype', 'type'],
+    account: ['namereferenzkonto', 'referenzkonto', 'auftragskonto', 'bezeichnungauftragskonto', 'kontoname', 'konto'],
+    category: ['analysehauptkategorie', 'hauptkategorie', 'kategorie', 'analysekategorie', 'category'],
     sub: ['analyseunterkategorie', 'unterkategorie'],
     contract: ['analysevertrag', 'vertrag', 'vertragsname']
   };
@@ -3090,6 +3094,7 @@ const FgImport = (() => {
     let s = String(v || '').replace(/[€\s]|EUR/gi, '');
     if (!s) return NaN;
     if (/,\d{1,2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');   // 1.234,56
+    else if (/^[-+]?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // 2.800 (Tausenderpunkt ohne Cent)
     else s = s.replace(/,/g, '');                                           // 1,234.56
     return parseFloat(s);
   }
@@ -3134,20 +3139,24 @@ const FgImport = (() => {
     const rows = isZip ? await readXlsx(buf) : readCsv(new TextDecoder(isUtf8(buf) ? 'utf-8' : 'windows-1252').decode(buf));
     // Kopfzeile suchen: die erste Zeile mit Datum und Betrag
     let hi = -1, map = null;
-    for (let i = 0; i < Math.min(rows.length, 30); i++) {
-      const h = rows[i].map(norm), m = {};
-      Object.keys(COLS).forEach(k => { const j = h.findIndex(x => COLS[k].includes(x)); if (j >= 0) m[k] = j; });
+    for (let i = 0; i < Math.min(rows.length, 40); i++) {
+      const h = rows[i].map(norm), m = {}, used = new Set();
+      Object.keys(COLS).forEach(k => {
+        for (const syn of COLS[k]) { const j = h.indexOf(syn); if (j >= 0 && !(used.has(j) && k !== 'kind')) { m[k] = j; if (k !== 'kind') used.add(j); break; } }
+      });
       if (m.date != null && m.amount != null) { hi = i; map = m; break; }
     }
-    if (hi < 0) throw new Error('Keine Spalten „Buchungstag“ und „Betrag“ gefunden. Ist das der Finanzguru-Umsatzexport?');
+    if (hi < 0) throw new Error('Keine Spalten für Datum und Betrag gefunden. Ist das der Umsatz-Export (CSV) deiner Bank?');
     const tx = [];
     let skipped = 0;
     rows.slice(hi + 1).forEach(r => {
       const date = toDate(r[map.date]), amount = toAmount(r[map.amount]);
       if (!date || !isFinite(amount) || amount === 0) return;
       const t = { date, amount: Math.round(amount * 100) / 100 };
-      ['payee', 'memo', 'account', 'category', 'sub', 'contract'].forEach(k => { if (map[k] != null && r[map[k]] !== '') t[k === 'category' ? 'cat' : k] = String(r[map[k]]).trim().slice(0, k === 'memo' ? 90 : 60); });
-      if (TRANSFER.test(`${t.cat || ''} ${t.sub || ''} ${t.memo || ''}`.toLowerCase())) { skipped++; return; }
+      ['payee', 'memo', 'kind', 'account', 'category', 'sub', 'contract'].forEach(k => { if (map[k] != null && r[map[k]] !== '' && r[map[k]] != null) t[k === 'category' ? 'cat' : k] = String(r[map[k]]).trim().replace(/\s+/g, ' ').slice(0, k === 'memo' ? 90 : 60); });
+      const side = amount < 0 ? map.payeeOut : map.payeeIn;
+      if (!t.payee && side != null && r[side]) t.payee = String(r[side]).trim().slice(0, 60);
+      if (TRANSFER.test(`${t.cat || ''} ${t.sub || ''} ${t.kind || ''} ${t.memo || ''}`.toLowerCase())) { skipped++; return; }
       tx.push(t);
     });
     return { tx, skipped };
@@ -3200,7 +3209,7 @@ const FgImport = (() => {
 A.fgLoad = async el => {
   const file = el.files && el.files[0];
   if (!file) return;
-  toast('Finanzguru-Export wird gelesen …');
+  toast('Umsätze werden gelesen …');
   try {
     const r = FgImport.apply(await FgImport.read(file), file.name);
     toast(`${r.added} Umsätze übernommen${r.dup ? `, ${r.dup} schon vorhanden` : ''}${r.skipped ? `, ${r.skipped} Umbuchungen ausgelassen` : ''}`);
@@ -3210,7 +3219,7 @@ A.fgLoad = async el => {
   }
   el.value = '';
 };
-const fgLoadBtn = (label, cls, raw) => `<label class="${cls || 'btn'}" style="cursor:pointer">${raw ? '' : icon('sync')}${label}<input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-change="fgLoad" hidden></label>`;
+const fgLoadBtn = (label, cls, raw) => `<label class="${cls || 'btn'}" style="cursor:pointer">${raw ? '' : icon('sync')}${label}<input type="file" accept=".csv,.txt,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-change="fgLoad" hidden></label>`;
 
 /* =====================================================================
    Planer: Kalender, Aufgaben, Einkaufsliste
