@@ -2398,7 +2398,7 @@ const RACES = [[5, '5 km'], [10, '10 km'], [21.0975, 'Halbmarathon'], [42.195, '
 const riegel = (sec, km, target) => sec * Math.pow(target / km, 1.06);
 
 function runsInRange(a, b) { return Runs.all().filter(r => { const k = dkey(r.start); return k >= a && k <= b; }); }
-function routeSvg(route, cls, w, h) {
+function routeSvg(route, cls, w, h, kmMarks) {
   if (!route || route.length < 2) return '';
   w = w || 300; h = h || 160;
   const lat0 = route[0][0] * Math.PI / 180;
@@ -2410,7 +2410,15 @@ function routeSvg(route, cls, w, h) {
   const P = p => [(p[0] - minX) * sc + ox, (p[1] - minY) * sc + oy];
   const d = pts.map((p, i) => { const q = P(p); return (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join(' ');
   const s = P(pts[0]), e = P(pts[pts.length - 1]);
-  return `<svg class="${cls}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${d}"/>${cls === 'route' ? `<circle cx="${s[0]}" cy="${s[1]}" r="5"/><circle cx="${e[0]}" cy="${e[1]}" r="5" style="fill:var(--ink)"/>` : ''}</svg>`;
+  let marks = '';
+  if (kmMarks) {
+    let dist = 0, next = 1000;
+    for (let i = 1; i < route.length; i++) {
+      dist += haversine(route[i - 1], route[i]);
+      if (dist >= next) { const q = P(pts[i]); marks += `<circle class="km" cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="3.5"/>`; next += 1000; }
+    }
+  }
+  return `<svg class="${cls}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="${d}"/>${marks}${cls === 'route' ? `<circle cx="${s[0]}" cy="${s[1]}" r="6"/><circle cx="${e[0]}" cy="${e[1]}" r="6" style="fill:var(--ink)"/>` : ''}</svg>`;
 }
 function haversine(a, b) {
   const R = 6371000, toR = x => x * Math.PI / 180;
@@ -2444,7 +2452,7 @@ function renderRunDash() {
   return `<div class="quick">
       <a class="quick-btn" href="#/laufen/live"><span class="qi">${icon('pin')}</span><span>${LiveRun.st.status !== 'idle' ? 'Lauf läuft' : 'Lauf starten'}<small>mit GPS</small></span></a>
       <a class="quick-btn" href="#/laufen/eintragen"><span class="qi">${icon('plus')}</span><span>Lauf eintragen<small>von der Uhr</small></span></a>
-      <a class="quick-btn" href="#/laufen/rechner"><span class="qi">${icon('bolt')}</span><span>Pace-Rechner<small>und Prognose</small></span></a>
+      <label class="quick-btn" style="cursor:pointer"><span class="qi">${icon('pin')}</span><span>Route laden<small>GPX, z. B. aus NOOP</small></span><input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" data-change="gpxLoad" hidden></label>
       <a class="quick-btn" href="#/laufen/verlauf"><span class="qi">${icon('list')}</span><span>Alle Läufe<small>${Runs.all().length} gespeichert</small></span></a></div>
     <div class="kpis">
       <div class="card"><div class="stat-label">Diese Woche</div><div class="stat-value">${fmt(km(week), 1)}<small>km</small></div><div class="stat-foot">${week.length} ${week.length === 1 ? 'Lauf' : 'Läufe'}</div></div>
@@ -2506,18 +2514,84 @@ A.runDelete = el => confirmSheet('Lauf löschen?', 'Der Lauf wird endgültig ent
 function renderRunDetail(id) {
   const r = Runs.get(id);
   if (!r) return `<div class="card">${emptyState('run', 'Lauf nicht gefunden')}</div>`;
-  const splits = r.splits || [];
+  const splits = r.splits || [], hasRoute = r.route && r.route.length > 1;
+  const gpxBtn = `<label class="btn" style="cursor:pointer">${icon('pin')}${hasRoute ? 'Route ersetzen' : 'Route laden'}<input type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" data-change="gpxLoad" data-id="${r.id}" hidden></label>`;
+  const sub = `${fmtDate(r.start, { day: true, plain: true })} · ${fmtTime(r.start)} Uhr${r.src === 'noop' ? ' · aus NOOP' : ''}`;
   return `<a class="btn btn-ghost btn-s" href="#/laufen/verlauf" style="margin-bottom:12px">${icon('left', 'ic-s')}Alle Läufe</a>
-    ${pageHead(`${fmt(r.km, 2)} km ${esc(r.type || '')}`, `${fmtDate(r.start, { day: true, plain: true })} · ${fmtTime(r.start)} Uhr`, `<a class="btn" href="#/laufen/eintragen/${r.id}">${icon('edit')}Bearbeiten</a>`)}
+    ${pageHead(`${fmt(r.km, 2)} km ${esc(r.type || '')}`, sub, `${gpxBtn}<a class="btn" href="#/laufen/eintragen/${r.id}">${icon('edit')}Bearbeiten</a>`)}
     <div class="kpis"><div class="card"><div class="stat-label">Zeit</div><div class="stat-value">${fmtDur(r.sec)}</div></div>
       <div class="card"><div class="stat-label">Pace</div><div class="stat-value">${fmtPace(r.sec / r.km)}<small>/km</small></div></div>
-      <div class="card"><div class="stat-label">Tempo</div><div class="stat-value">${fmt(r.km / (r.sec / 3600), 1)}<small>km/h</small></div></div>
-      <div class="card"><div class="stat-label">${r.hr ? 'Ø Puls' : 'Gefühl'}</div><div class="stat-value">${r.hr ? r.hr + '<small>bpm</small>' : ['–', 'Zäh', 'Okay', 'Gut', 'Stark', 'Fliegend'][r.feel || 0]}</div></div></div>
-    <div class="grid">${r.route && r.route.length > 1 ? `<div class="card span-7"><div class="card-head"><h2>${icon('pin')}Strecke</h2><span class="legend small"><span><i class="dot" style="background:var(--accent-mark)"></i>Start</span><span><i class="dot" style="background:var(--ink)"></i>Ziel</span></span></div>${routeSvg(r.route, 'route', 600, 300)}</div>` : ''}
-      <div class="card ${r.route && r.route.length > 1 ? 'span-5' : 'span-12'}"><div class="card-head"><h2>${icon('list')}${splits.length ? 'Kilometerzeiten' : 'Notiz'}</h2></div>
+      <div class="card"><div class="stat-label">${r.elev ? 'Höhenmeter' : 'Tempo'}</div><div class="stat-value">${r.elev ? fmt(r.elev) + '<small>m</small>' : fmt(r.km / (r.sec / 3600), 1) + '<small>km/h</small>'}</div></div>
+      <div class="card"><div class="stat-label">${r.hr ? 'Puls Ø / max' : 'Gefühl'}</div><div class="stat-value">${r.hr ? r.hr + `<small>${r.maxHr ? '/ ' + r.maxHr + ' ' : ''}bpm</small>` : ['–', 'Zäh', 'Okay', 'Gut', 'Stark', 'Fliegend'][r.feel || 0]}</div></div></div>
+    <div class="grid">${hasRoute ? `<div class="card span-7"><div class="card-head"><h2>${icon('pin')}Strecke</h2><span class="legend small"><span><i class="dot" style="background:var(--accent-mark)"></i>Start</span><span><i class="dot" style="background:var(--ink)"></i>Ziel</span><span><i class="dot" style="background:color-mix(in srgb, var(--ink) 45%, transparent)"></i>je km</span></span></div>${routeSvg(r.route, 'route', 600, 320, true)}</div>` : ''}
+      <div class="card ${hasRoute ? 'span-5' : 'span-12'}"><div class="card-head"><h2>${icon('list')}${splits.length ? 'Kilometerzeiten' : 'Notiz'}</h2></div>
       ${splits.length ? `<table class="ntable"><thead><tr><th>km</th><th>Zeit</th><th>Pace</th></tr></thead><tbody>${splits.map((s, i) => `<tr><td>${i + 1}</td><td>${fmtDur(splits.slice(0, i + 1).reduce((a, b) => a + b, 0))}</td><td>${fmtPace(s)}</td></tr>`).join('')}</tbody></table>` : ''}
-      ${r.note ? `<p style="margin-top:12px">${esc(r.note)}</p>` : splits.length ? '' : '<p class="muted">Keine Notiz</p>'}</div></div>`;
+      ${r.note ? `<p style="margin-top:12px">${esc(r.note)}</p>` : splits.length ? '' : `<p class="muted">${hasRoute ? 'Keine Notiz' : 'Für Karte und Kilometerzeiten die Route als GPX laden, z. B. mit dem NOOP-Kurzbefehl „Route exportieren“'}</p>`}</div></div>
+    ${r.hrCurve ? noopHrBlock({ hr: r.hrCurve, zones: r.zones, hrMax: r.hrMax, avgHr: r.hr, maxHr: r.maxHr }) : ''}`;
 }
+
+/* ---------- GPX: Route, Kilometerzeiten und Höhenmeter ---------- */
+const Gpx = {
+  parse(text) {
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    const pts = Array.from(doc.getElementsByTagName('trkpt')).concat(Array.from(doc.getElementsByTagName('rtept'))).map(p => {
+      const t = p.getElementsByTagName('time')[0], e = p.getElementsByTagName('ele')[0];
+      return { lat: +p.getAttribute('lat'), lon: +p.getAttribute('lon'), t: t ? Date.parse(t.textContent) : null, ele: e ? +e.textContent : null };
+    }).filter(p => isFinite(p.lat) && isFinite(p.lon) && (p.lat || p.lon));
+    if (pts.length < 2) throw new Error('In der Datei ist keine Strecke (GPX mit Trackpunkten nötig).');
+    let dist = 0, gain = 0, lastEle = null, nextKm = 1000;
+    const splits = [], hasTime = pts.every(p => p.t);
+    let kmStartT = hasTime ? pts[0].t : null;
+    for (let i = 1; i < pts.length; i++) {
+      const d = haversine([pts[i - 1].lat, pts[i - 1].lon], [pts[i].lat, pts[i].lon]);
+      if (hasTime && d > 0) {
+        while (dist + d >= nextKm) {       // Kilometermarke zwischen zwei Punkten: Zeit linear einrechnen
+          const f = (nextKm - dist) / d, tKm = pts[i - 1].t + f * (pts[i].t - pts[i - 1].t);
+          splits.push(Math.round((tKm - kmStartT) / 1000)); kmStartT = tKm; nextKm += 1000;
+        }
+      }
+      dist += d;
+      if (pts[i].ele != null) { if (lastEle != null && pts[i].ele - lastEle > 2) { gain += pts[i].ele - lastEle; lastEle = pts[i].ele; } else if (lastEle == null || pts[i].ele < lastEle) lastEle = pts[i].ele; }
+    }
+    const step = Math.max(1, Math.ceil(pts.length / 500));
+    return {
+      start: hasTime ? pts[0].t : null, sec: hasTime ? Math.round((pts[pts.length - 1].t - pts[0].t) / 1000) : null,
+      km: Math.round(dist / 10) / 100, splits, elev: gain ? Math.round(gain) : null,
+      route: pts.filter((_, i) => i % step === 0 || i === pts.length - 1).map(p => [+p.lat.toFixed(6), +p.lon.toFixed(6)])
+    };
+  },
+  // Passenden Lauf suchen: gleicher Start (± 15 min) oder GPX-Start liegt im Lauf
+  match(g) {
+    if (!g.start) return null;
+    return Runs.all().find(r => Math.abs(r.start - g.start) < 15 * 60e3 || (g.start >= r.start && g.start <= r.start + r.sec * 1000)) || null;
+  }
+};
+A.gpxLoad = el => {
+  const file = el.files && el.files[0];
+  if (!file) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const g = Gpx.parse(fr.result);
+      let r = el.dataset.id ? Runs.get(el.dataset.id) : Gpx.match(g);
+      if (r) {
+        r = Object.assign({}, r, { route: g.route, splits: g.splits.length ? g.splits : r.splits, elev: g.elev || r.elev });
+        if (!(r.km > 0)) r.km = g.km;
+        if (!(r.sec > 0) && g.sec) r.sec = g.sec;
+        toast(`Route übernommen: ${fmt(g.km, 2)} km${g.splits.length ? `, ${g.splits.length} Kilometerzeiten` : ''}`);
+      } else {
+        if (!g.sec) throw new Error('Die Datei hat keine Zeiten, darum lässt sich kein neuer Lauf anlegen.');
+        r = { id: uid(), src: 'gpx', start: g.start, km: g.km, sec: g.sec, type: 'Locker', feel: 3, note: '', route: g.route, splits: g.splits, elev: g.elev };
+        toast(`Neuer Lauf aus GPX: ${fmt(g.km, 2)} km`);
+      }
+      Runs.save(r);
+      go('laufen/lauf/' + r.id);
+    } catch (e) { toast(e && e.message ? e.message : 'GPX-Datei konnte nicht gelesen werden'); }
+  };
+  fr.readAsText(file);
+  el.value = '';
+};
+
 function renderRunHistory() {
   const rs = Runs.all();
   if (!rs.length) return `<div class="card">${emptyState('run', 'Noch keine Läufe', `<a class="btn btn-primary" href="#/laufen/eintragen">Lauf eintragen</a>`)}</div>`;
@@ -3780,6 +3854,7 @@ const SPORT_DE = {
   'treadmill run': 'Laufband', 'treadmill walk': 'Laufband (Gehen)', functionalfitness: 'Functional Fitness', 'functional fitness': 'Functional Fitness',
   tennis: 'Tennis', football: 'Fußball', soccer: 'Fußball', basketball: 'Basketball', boxing: 'Boxen', climbing: 'Klettern', pilates: 'Pilates', handball: 'Handball'
 };
+const NOOP_RUN = /^(running|run|treadmill run|trail running|jogging|laufen)$/i;
 const sportDe = s => SPORT_DE[String(s || '').toLowerCase()] || s || 'Workout';
 const fmtSleep = m => m ? `${Math.floor(m / 60)}:${pad2(Math.round(m % 60))} h` : '–';
 function recState(r) {
@@ -3809,13 +3884,29 @@ const NoopData = {
     Store.set('noopWorkouts', r.workouts.slice(0, 400));
     const ks = Object.keys(keep).sort();
     Store.set('noopMeta', { loaded: Date.now(), file: fileName, from: ks[0], to: ks[ks.length - 1], days: ks.length, workouts: r.workouts.length });
-    return this.toWeek(r.workouts);
+    return this.toRuns(r.workouts) + this.toWeek(r.workouts);
+  },
+  // Läufe mit Distanz (in NOOP gestartet oder aus WHOOP) kommen unter Laufen, mit Puls und Zonen
+  toRuns(list) {
+    const from = Date.now() - 60 * 864e5, mine = Runs.all();
+    let n = 0;
+    list.filter(w => NOOP_RUN.test(w.sport) && w.dist > 0 && w.start >= from && (w.src === 'manual' || w.src === 'whoop')).forEach(w => {
+      const id = 'noop-r-' + Math.round(w.start / 1000);
+      const extra = { hrCurve: w.hr, zones: w.zones, hrMax: w.hrMax, maxHr: w.maxHr, strain: w.strain, kcal: w.kcal != null ? Math.round(w.kcal) : undefined };
+      const had = mine.find(x => x.id === id);
+      if (had) { if (w.hr && !had.hrCurve) Runs.save(Object.assign({}, had, extra)); return; }
+      if (mine.some(x => x.start < w.end && x.start + x.sec * 1000 > w.start)) return;   // im Dashboard selbst aufgezeichnet
+      Runs.save(Object.assign({ id, src: 'noop', start: w.start, sec: Math.round(w.dur || (w.end - w.start) / 1000), km: Math.round(w.dist / 10) / 100,
+        type: /treadmill|laufband/i.test(w.sport) ? 'Laufband' : 'Locker', hr: w.avgHr, feel: 3, note: '' }, extra));
+      n++;
+    });
+    return n;
   },
   // In NOOP selbst gestartete Trainings (Quelle „manual“) zählen auch in der Trainingswoche des Dashboards
   toWeek(list) {
     const from = Date.now() - 60 * 864e5, mine = Workouts.all();
     let n = 0;
-    list.filter(w => w.src === 'manual' && w.start >= from).forEach(w => {
+    list.filter(w => w.src === 'manual' && w.start >= from && !(NOOP_RUN.test(w.sport) && w.dist > 0)).forEach(w => {
       const id = 'noop-' + Math.round(w.start / 1000);
       const had = mine.find(x => x.id === id);
       if (had) { if (w.hr && !had.hr) Workouts.save(Object.assign({}, had, { hr: w.hr, zones: w.zones, hrMax: w.hrMax })); return; }
@@ -3834,7 +3925,7 @@ A.noopLoad = async el => {
   try {
     const r = await NoopBak.read(file);
     const added = NoopData.save(r, file.name);
-    toast(`${Object.keys(r.days).length} Tage und ${r.workouts.length} Workouts aus NOOP geladen${added ? `, ${added} Trainings in die Woche übernommen` : ''}`);
+    toast(`${Object.keys(r.days).length} Tage und ${r.workouts.length} Workouts aus NOOP geladen${added ? `, ${added} Trainings/Läufe übernommen` : ''}`);
     rerender();
   } catch (e) {
     toast(e && e.message ? e.message : 'Die Sicherung konnte nicht gelesen werden');

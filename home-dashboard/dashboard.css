@@ -785,3 +785,5 @@ h1, .hero h1, .tile h2, .room h2, .sheet-head h2 { font-family: var(--font); fon
 .zone-row .zv small { display: block; color: var(--muted); font-size: 12px; }
 .zone-row .zb { height: 6px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
 .zone-row .zb span { display: block; height: 100%; border-radius: 4px; }
+.route .km { fill: color-mix(in srgb, var(--ink) 45%, transparent); stroke: var(--surface); stroke-width: 1.5; }
+.route { height: 320px; }
