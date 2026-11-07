@@ -331,12 +331,14 @@ function go(path) {
 }
 const AREA_ICONS = { heute: 'home', training: 'gym', essen: 'food', laufen: 'run', zuhause: 'house', finanzen: 'wallet', planer: 'tasks', einstellungen: 'settings' };
 function renderTopbar() {
-  const p = pageOf(PAGE) || PAGES[0];
+  const p = pageOf(PAGE) || PAGES[0], s = settings();
   $('#topbar').innerHTML = `<div class="tb-inner">${PAGE === 'heute'
-    ? `<a class="tb-title" href="index.html"><span class="brand-dot" aria-hidden="true"></span><span class="tb-brand">Zuhause</span></a>`
-    : `<a class="tb-back" href="index.html" aria-label="Zur Startseite">${icon('left')}Start</a><a class="tb-title" href="#/${PAGE}">${icon(AREA_ICONS[PAGE])}<span>${esc(p.name)}</span></a>`}
-    <div class="tb-actions"><button class="icon-btn" data-act="areas" aria-label="Alle Bereiche">${icon('grid')}</button>
-    ${PAGE === 'einstellungen' ? '' : `<a class="icon-btn" href="einstellungen.html" aria-label="Einstellungen">${icon('settings')}</a>`}</div></div>`;
+    ? `<span class="avatar" aria-hidden="true">${esc((s.name || 'J').trim().charAt(0).toUpperCase())}</span><span class="tb-welcome">Willkommen, ${esc(s.name)}<small>Dein Zuhause-Dashboard</small></span>`
+    : `<a class="tb-back" href="index.html" aria-label="Zur Startseite">${icon('left')}Start</a><span class="tb-title">${icon(AREA_ICONS[PAGE])}<span>${esc(p.name)}</span></span>`}
+    <div class="tb-actions">${PAGE === 'einstellungen' ? '' : `<a class="icon-btn" href="einstellungen.html" aria-label="Einstellungen">${icon('settings')}</a>`}</div></div>`;
+  // Bereichs-Leiste (links am Desktop, unten am Handy)
+  if (!$('#dock')) document.body.insertAdjacentHTML('beforeend', `<nav class="dock" id="dock" aria-label="Bereiche">${PAGES.filter(x => x.view !== 'einstellungen').map(x =>
+    `<a href="${x.file}" class="${x.view === PAGE ? 'active' : ''}"${x.view === PAGE ? ' aria-current="page"' : ''} aria-label="${x.view === 'heute' ? 'Start' : esc(x.name)}" title="${x.view === 'heute' ? 'Start' : esc(x.name)}">${icon(AREA_ICONS[x.view])}</a>`).join('')}</nav>`);
 }
 A.areas = () => Sheet.open(`${sheetHead('Bereiche')}<nav class="areas" aria-label="Bereiche">${PAGES.map(p =>
   `<a class="area-link${p.view === PAGE ? ' current' : ''}" href="${p.file}"${p.view === PAGE ? ' aria-current="page"' : ''}>${icon(AREA_ICONS[p.view])}${p.view === 'heute' ? 'Start' : esc(p.name)}</a>`).join('')}</nav>`);
@@ -673,7 +675,7 @@ const Charts = {
       const cx = pl + band * i + band / 2, x = cx - bw / 2, y = Y(b.value), h = H - pb - y;
       if (b.value > 0) {
         const r = Math.min(4, h, bw / 2);
-        marks += `<path class="bar-mark${b.dim ? ' dim' : ''}${b.over ? ' over' : ''}" d="M${x} ${H - pb} V${y + r} Q${x} ${y} ${x + r} ${y} H${x + bw - r} Q${x + bw} ${y} ${x + bw} ${y + r} V${H - pb} Z"/>`;
+        marks += `<path class="bar-mark${b.dim ? ' dim' : ''}${b.over ? ' over' : ''}${b.strong ? ' cur' : ''}" d="M${x} ${H - pb} V${y + r} Q${x} ${y} ${x + r} ${y} H${x + bw - r} Q${x + bw} ${y} ${x + bw} ${y + r} V${H - pb} Z"/>`;
       }
       if (i % every === 0 || i === bars.length - 1 && bars.length < 10) labels += `<text x="${cx}" y="${H - 8}" text-anchor="middle"${b.strong ? ' style="fill:var(--ink);font-weight:700"' : ''}>${esc(b.label)}</text>`;
       hits += `<rect class="hit" data-i="${i}" x="${pl + band * i}" y="0" width="${band}" height="${H - pb + 4}"/>`;
@@ -3529,7 +3531,7 @@ function renderNoop() {
   };
   return `<div class="row-between wrap" style="margin-bottom:14px"><p class="muted small">Sicherung „${esc(meta.file || 'NOOP')}“ · geladen ${meta.loaded ? fmtDate(meta.loaded) + ', ' + fmtTime(meta.loaded) : ''} · Daten bis ${meta.to ? fmtDate(meta.to) : '–'}</p>
       ${noopLoadBtn('Neue Sicherung laden')}</div>
-    <div class="kpis">
+    <div class="kpis no-hl">
       <div class="card"><div class="stat-label">Recovery${rec && rec.day !== t ? ' · ' + fmtDate(rec.day) : ''}</div><div class="stat-value" style="color:${rs.color}">${rec ? fmt(rec.v) : '–'}<small>%</small></div><div class="stat-foot"><span class="chip" style="color:${rs.color}">● ${rs.label}</span></div></div>
       <div class="card"><div class="stat-label">HRV</div><div class="stat-value">${hrv ? fmt(hrv.v) : '–'}<small>ms</small></div><div class="stat-foot">${delta(hrv && hrv.v, hrv30, 'ms', true)}</div></div>
       <div class="card"><div class="stat-label">Ruhepuls</div><div class="stat-value">${rhr ? fmt(rhr.v) : '–'}<small>bpm</small></div><div class="stat-foot">${delta(rhr && rhr.v, rhr30, 'bpm', false)}</div></div>
