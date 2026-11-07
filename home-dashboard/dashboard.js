@@ -1081,6 +1081,11 @@ const e1rm = (kg, reps) => (kg > 0 && reps > 0) ? (reps === 1 ? kg : kg * (1 + r
 const workSets = w => [].concat(...w.items.map(it => it.sets.filter(s => s.type !== 'w').map(s => Object.assign({ ex: it.ex }, s))));
 const woVolume = w => sum(workSets(w).map(s => (+s.kg || 0) * (+s.reps || 0)));
 const woDuration = w => w.end ? (w.end - w.start) / 1000 : 0;
+// Aus NOOP übernommene Trainings haben keine Sätze, dafür Belastung, Kalorien und Puls
+const woSub = w => w.src === 'noop'
+  ? `${fmtDate(w.start, { day: true })} · ${fmtMin(woDuration(w))} · aus NOOP${w.avgHr ? ` · Ø ${w.avgHr} bpm` : ''}`
+  : `${fmtDate(w.start, { day: true })} · ${fmtMin(woDuration(w))} · ${w.items.length} Übungen`;
+const woEnd = w => w.src === 'noop' ? (w.kcal ? `${fmt(w.kcal)} kcal` : '') : `${fmt(woVolume(w))} kg`;
 
 const DEFAULT_TEMPLATES = [
   { id: 't-push', name: 'Push', items: [['bench', 4, '6–8'], ['db-incline', 3, '8–10'], ['ohp', 3, '8–10'], ['lat-raise', 3, '12–15'], ['pushdown', 3, '10–12']] },
@@ -1481,7 +1486,7 @@ function renderHistory() {
     <div class="card" style="padding:8px 16px"><div class="list">${groups[k].map(w => {
       const pc = new Set(prs.filter(p => p.w === w.id).map(p => p.ex)).size;
       return `<a class="li" href="#/training/einheit/${w.id}"><div class="li-main"><div class="li-title">${esc(w.name)} ${pc ? `<span class="badge-pr">${icon('trophy', 'ic-s')}${pc}</span>` : ''}</div>
-        <div class="li-sub">${fmtDate(w.start, { day: true })} · ${fmtMin(woDuration(w))} · ${w.items.length} Übungen</div></div><div class="li-end">${fmt(woVolume(w))} kg</div></a>`;
+        <div class="li-sub">${woSub(w)}</div></div><div class="li-end">${woEnd(w)}</div></a>`;
     }).join('')}</div></div>`;
   }).join('');
 }
@@ -1489,6 +1494,15 @@ function renderWorkoutDetail(id) {
   const w = Workouts.get(id);
   if (!w) return `<div class="card">${emptyState('calendar', 'Training nicht gefunden')}</div>`;
   const prs = prEvents().filter(p => p.w === w.id);
+  if (w.src === 'noop') {
+    return `<a class="btn btn-ghost btn-s" href="#/training/verlauf" style="margin-bottom:12px">${icon('left', 'ic-s')}Verlauf</a>
+    ${pageHead(esc(w.name), `${fmtDate(w.start, { day: true, plain: true })} · ${fmtTime(w.start)}–${fmtTime(w.end)} Uhr · aus NOOP`, `<button class="icon-btn bordered" data-act="woDelete" data-id="${w.id}" aria-label="Training löschen">${icon('trash')}</button>`)}
+    <div class="kpis"><div class="card"><div class="stat-label">Dauer</div><div class="stat-value">${fmtMin(woDuration(w))}</div></div>
+      <div class="card"><div class="stat-label">Belastung</div><div class="stat-value">${w.strain != null ? fmt(w.strain, 1) : '–'}<small>/ 100</small></div></div>
+      <div class="card"><div class="stat-label">Kalorien</div><div class="stat-value">${w.kcal ? fmt(w.kcal) : '–'}<small>kcal</small></div></div>
+      <div class="card"><div class="stat-label">Puls Ø / max</div><div class="stat-value">${w.avgHr || '–'}<small>/ ${w.maxHr || '–'} bpm</small></div></div></div>
+    <div class="card"><p class="muted">In NOOP aufgezeichnet (${esc(sportDe(w.sport))}). Sätze und Gewichte gibt es dafür nicht. Wenn du das Training hier im Logger mitschreibst, bekommst du beides.</p></div>`;
+  }
   return `<a class="btn btn-ghost btn-s" href="#/training/verlauf" style="margin-bottom:12px">${icon('left', 'ic-s')}Verlauf</a>
     ${pageHead(esc(w.name), `${fmtDate(w.start, { day: true, plain: true })} · ${fmtTime(w.start)}–${fmtTime(w.end)} Uhr`,
       `<button class="btn" data-act="woRepeat" data-id="${w.id}">${icon('play')}Wiederholen</button><button class="btn" data-act="tplFromWorkout" data-id="${w.id}">Als Plan</button><button class="icon-btn bordered" data-act="woDelete" data-id="${w.id}" aria-label="Training löschen">${icon('trash')}</button>`)}
@@ -1591,7 +1605,7 @@ function renderTrainingDash() {
     <div class="card span-5"><div class="card-head"><h2>${icon('trophy')}Bestleistungen</h2><a class="btn btn-ghost btn-s" href="#/training/uebungen">Alle</a></div>
       <div class="list">${bests.map(x => `<a class="li" href="#/training/uebung/${encodeURIComponent(x.id)}"><div class="li-main"><div class="li-title">${esc(Exercises.get(x.id).name)}</div><div class="li-sub">${fmt(x.b.best.kg, 2)} kg × ${x.b.best.reps} · ${fmtDate(x.b.date)}</div></div><div class="li-end">${fmt(x.b.e1rm, 1)} kg</div></a>`).join('') || '<p class="empty">Hier landen deine Rekorde</p>'}</div></div>
     <div class="card span-12"><div class="card-head"><h2>${icon('list')}Letzte Trainings</h2><a class="btn btn-ghost btn-s" href="#/training/verlauf">Verlauf</a></div>
-      <div class="list">${Workouts.all().slice(0, 5).map(w => `<a class="li" href="#/training/einheit/${w.id}"><div class="li-main"><div class="li-title">${esc(w.name)}</div><div class="li-sub">${fmtDate(w.start, { day: true })} · ${fmtMin(woDuration(w))} · ${w.items.map(it => Exercises.get(it.ex).name.split(' (')[0]).slice(0, 4).join(', ')}</div></div><div class="li-end">${fmt(woVolume(w))} kg</div></a>`).join('') || '<p class="empty">Noch keine Trainings</p>'}</div></div>
+      <div class="list">${Workouts.all().slice(0, 5).map(w => `<a class="li" href="#/training/einheit/${w.id}"><div class="li-main"><div class="li-title">${esc(w.name)}</div><div class="li-sub">${w.src === 'noop' ? woSub(w) : `${fmtDate(w.start, { day: true })} · ${fmtMin(woDuration(w))} · ${w.items.map(it => Exercises.get(it.ex).name.split(' (')[0]).slice(0, 4).join(', ')}`}</div></div><div class="li-end">${woEnd(w)}</div></a>`).join('') || '<p class="empty">Noch keine Trainings</p>'}</div></div>
   </div>`;
 }
 A.kvEx = el => { kv.ex = el.value; Local.set('kv', kv); rerender(); };
@@ -3728,6 +3742,20 @@ const NoopData = {
     Store.set('noopWorkouts', r.workouts.slice(0, 400));
     const ks = Object.keys(keep).sort();
     Store.set('noopMeta', { loaded: Date.now(), file: fileName, from: ks[0], to: ks[ks.length - 1], days: ks.length, workouts: r.workouts.length });
+    return this.toWeek(r.workouts);
+  },
+  // In NOOP selbst gestartete Trainings (Quelle „manual“) zählen auch in der Trainingswoche des Dashboards
+  toWeek(list) {
+    const from = Date.now() - 60 * 864e5, mine = Workouts.all();
+    let n = 0;
+    list.filter(w => w.src === 'manual' && w.start >= from).forEach(w => {
+      const id = 'noop-' + Math.round(w.start / 1000);
+      if (mine.some(x => x.id === id || (x.start < w.end && (x.end || x.start) > w.start))) return;   // schon da oder im Logger mitgeschrieben
+      Workouts.save({ id, src: 'noop', name: sportDe(w.sport), sport: w.sport, start: w.start, end: w.end, items: [],
+        strain: w.strain, kcal: w.kcal != null ? Math.round(w.kcal) : undefined, avgHr: w.avgHr, maxHr: w.maxHr });
+      n++;
+    });
+    return n;
   }
 };
 A.noopLoad = async el => {
@@ -3736,8 +3764,8 @@ A.noopLoad = async el => {
   toast('NOOP-Sicherung wird gelesen …');
   try {
     const r = await NoopBak.read(file);
-    NoopData.save(r, file.name);
-    toast(`${Object.keys(r.days).length} Tage und ${r.workouts.length} Workouts aus NOOP geladen`);
+    const added = NoopData.save(r, file.name);
+    toast(`${Object.keys(r.days).length} Tage und ${r.workouts.length} Workouts aus NOOP geladen${added ? `, ${added} Trainings in die Woche übernommen` : ''}`);
     rerender();
   } catch (e) {
     toast(e && e.message ? e.message : 'Die Sicherung konnte nicht gelesen werden');
