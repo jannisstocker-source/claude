@@ -2759,8 +2759,9 @@ const SPEND_CATS = [
   ['lebensmittel', 'Lebensmittel', 'cart'], ['essen', 'Essen gehen', 'food'], ['haushalt', 'Haushalt', 'house'],
   ['einrichtung', 'Einrichtung', 'bulb'], ['mobil', 'Mobilität', 'pin'], ['freizeit', 'Freizeit', 'bolt'],
   ['sport', 'Sport', 'gym'], ['kleidung', 'Kleidung', 'tasks'], ['gesundheit', 'Gesundheit', 'drop'],
-  ['geschenke', 'Geschenke', 'trophy'], ['sonst', 'Sonstiges', 'more']
+  ['geschenke', 'Geschenke', 'trophy'], ['sonst', 'Sonstiges', 'more'], ['fix', 'Fixkosten (Konto)', 'calendar'], ['einnahme', 'Einnahme', 'euro']
 ];
+const MANUAL_CATS = SPEND_CATS.filter(c => c[0] !== 'einnahme' && c[0] !== 'fix');
 const INTERVALS = { m: ['monatlich', 1], q: ['vierteljährlich', 3], h: ['halbjährlich', 6], y: ['jährlich', 12] };
 const METERS = [['strom', 'Strom', 'kWh', 'bolt'], ['wasser', 'Kaltwasser', 'm³', 'drop'], ['warmwasser', 'Warmwasser', 'm³', 'drop'], ['heizung', 'Heizung', 'kWh', 'thermo'], ['gas', 'Gas', 'm³', 'flame']];
 const FIX_SUGGEST = [
@@ -2779,7 +2780,11 @@ const Finance = {
   perMonth(f) { return (+f.amount || 0) / INTERVALS[f.interval || 'm'][1]; },
   monthlyFixed() { return sum(this.fixed().filter(f => f.active !== false).map(f => this.perMonth(f))); },
   spending(month) { return (Store.get('a-' + month, []) || []).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.ts - a.ts); },
-  spent(month) { return sum(this.spending(month).map(e => e.amount)); },
+  expenses(month) { return this.spending(month).filter(e => !e.inc); },
+  spent(month) { return sum(this.expenses(month).filter(e => e.cat !== 'fix').map(e => e.amount)); },
+  fixDebits(month) { return sum(this.expenses(month).filter(e => e.cat === 'fix').map(e => e.amount)); },
+  income(month) { return sum(this.spending(month).filter(e => e.inc).map(e => e.amount)); },
+  imported(month) { return this.spending(month).some(e => e.src === 'fg'); },
   saveSpend(e) {
     removeFromBuckets('a-', e.id);
     const key = 'a-' + e.date.slice(0, 7);
@@ -2811,21 +2816,24 @@ function renderFinDash() {
   for (let i = 5; i >= 0; i--) { const mm = shiftMonth(m, -i), v = Finance.spent(mm); months.push({ label: MONTHS[+mm.slice(5) - 1], value: Math.round(v), strong: i === 0, tip: `<b>${eur(v)}</b> Ausgaben<br>${monthName(mm)}` }); }
   const prev3 = [1, 2, 3].map(i => Finance.spent(shiftMonth(m, -i))).filter(v => v > 0);
   const byCat = {};
-  Finance.spending(m).forEach(e => { byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; });
+  Finance.expenses(m).filter(e => e.cat !== 'fix').forEach(e => { byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; });
+  const income = Finance.income(m), imp = Finance.imported(m), fg = Store.get('fgMeta', null);
   const fixByCat = {};
   Finance.fixed().filter(f => f.active !== false).forEach(f => { fixByCat[f.cat] = (fixByCat[f.cat] || 0) + Finance.perMonth(f); });
   const due = Finance.fixed().filter(f => f.active !== false).map(f => ({ f, d: Finance.nextDue(f) })).filter(x => x.d && x.d <= addDays(todayKey(), 21)).sort((a, b) => a.d < b.d ? -1 : 1);
   return `<div class="kpis">
-      <div class="card"><div class="stat-label">Fixkosten pro Monat</div><div class="stat-value">${eur(fixed)}</div><div class="stat-foot">${eur(fixed * 12)} im Jahr</div></div>
-      <div class="card"><div class="stat-label">Ausgaben ${MONTHS_LONG[+m.slice(5) - 1]}</div><div class="stat-value">${eur(spent)}</div><div class="stat-foot">${Finance.spending(m).length} Einträge</div></div>
+      <div class="card"><div class="stat-label">Ausgaben ${MONTHS_LONG[+m.slice(5) - 1]}</div><div class="stat-value">${eur(spent)}</div><div class="stat-foot">${Finance.expenses(m).filter(e => e.cat !== 'fix').length} Einträge ohne Fixkosten</div></div>
+      <div class="card"><div class="stat-label">Fixkosten pro Monat</div><div class="stat-value">${eur(fixed)}</div><div class="stat-foot">${imp ? `${eur(Finance.fixDebits(m))} schon abgebucht` : `${eur(fixed * 12)} im Jahr`}</div></div>
       <div class="card"><div class="stat-label">${budgetTotal ? 'Budget übrig' : 'Ø letzte 3 Monate'}</div><div class="stat-value">${budgetTotal ? eur(budgetTotal - spent) : prev3.length ? eur(sum(prev3) / prev3.length) : '–'}</div>
         ${budgetTotal ? `<div class="bar${spent > budgetTotal ? ' over' : ''}" style="margin-top:10px"><span style="width:${clamp(spent / budgetTotal * 100, 0, 100)}%"></span></div><div class="stat-foot">von ${eur(budgetTotal)}</div>` : '<div class="stat-foot">variable Ausgaben</div>'}</div>
-      <div class="card"><div class="stat-label">Monat gesamt</div><div class="stat-value">${eur(fixed + spent)}</div><div class="stat-foot">fix + variabel</div></div></div>
+      ${imp ? `<div class="card"><div class="stat-label">Saldo ${MONTHS_LONG[+m.slice(5) - 1]}</div><div class="stat-value" style="color:${income - spent - Finance.fixDebits(m) >= 0 ? 'var(--good)' : 'var(--bad)'}">${eur(income - spent - Finance.fixDebits(m))}</div><div class="stat-foot">Einnahmen ${eur(income)} laut Konto</div></div>`
+        : `<div class="card"><div class="stat-label">Monat gesamt</div><div class="stat-value">${eur(fixed + spent)}</div><div class="stat-foot">fix + variabel</div></div>`}</div>
     <div class="quick">
       <button class="quick-btn" data-act="spendNew"><span class="qi">${icon('plus')}</span><span>Ausgabe eintragen<small>in 5 Sekunden</small></span></button>
       <button class="quick-btn" data-act="fixEdit"><span class="qi">${icon('calendar')}</span><span>Fixkosten<small>Vertrag hinzufügen</small></span></button>
       <button class="quick-btn" data-act="meterNew"><span class="qi">${icon('meter')}</span><span>Zählerstand<small>Strom, Wasser, Heizung</small></span></button>
-      <a class="quick-btn" href="#/finanzen/ausgaben"><span class="qi">${icon('list')}</span><span>Alle Ausgaben<small>${monthName(m)}</small></span></a></div>
+      ${fgLoadBtn(`<span class="qi">${icon('sync')}</span><span>Finanzguru laden<small>${fg ? 'zuletzt ' + fmtDate(fg.loaded) : 'Export-Datei wählen'}</small></span>`, 'quick-btn', true)}</div>
+    ${fg ? `<p class="small muted" style="margin:-6px 4px 16px">Finanzguru-Export „${esc(fg.file)}“ · Umsätze vom ${fmtDate(fg.from, { plain: true })} bis ${fmtDate(fg.to, { plain: true })} · ${fg.added} neu übernommen${fg.dup ? `, ${fg.dup} schon vorhanden` : ''}${fg.skipped ? `, ${fg.skipped} Umbuchungen ausgelassen` : ''}</p>` : ''}
     <div class="grid">
       <div class="card span-7"><div class="card-head"><h2>${icon('chart')}Ausgaben pro Monat</h2><span class="muted small">ohne Fixkosten</span></div>
         ${Charts.slot({ type: 'bars', bars: months, height: 220, yFmt: v => fmt(v) + ' €', label: 'Ausgaben pro Monat', empty: 'Trag deine erste Ausgabe ein.' })}</div>
@@ -2835,6 +2843,7 @@ function renderFinDash() {
         <div class="list">${due.map(x => `<div class="li"><div class="li-main"><div class="li-title">${esc(x.f.name)}</div><div class="li-sub">${fmtDate(x.d, { day: true })} · ${INTERVALS[x.f.interval][0]}</div></div><span class="li-end">${eur(x.f.amount)}</span></div>`).join('') || `<p class="empty">Keine Abbuchung in den nächsten drei Wochen${Finance.fixed().some(f => !f.day) ? ' (Tag der Abbuchung bei den Fixkosten eintragen)' : ''}.</p>`}</div></div>
       <div class="card span-6"><div class="card-head"><h2>${icon('house')}Fixkosten nach Bereich</h2></div>
         ${Object.keys(fixByCat).length ? hbars(Object.keys(fixByCat).map(k => ({ label: k, value: Math.round(fixByCat[k]) })).sort((a, b) => b.value - a.value), v => fmt(v) + ' €') : `<p class="empty">Noch keine Fixkosten.</p><button class="btn" data-act="fixEdit">${icon('plus')}Erste Fixkosten anlegen</button>`}</div>
+      ${fgSuggestCard('span-12')}
       <div class="card span-12"><div class="card-head"><h2>${icon('euro')}Vermietung</h2></div>
         <p class="muted">Nebenkosten, Mietverträge und Kalkulation der Mietwohnungen laufen weiter in deinem eigenen Nebenkosten-Dashboard (Ordner „Mietswohnungen → Nebenkosten“). Diese Seite ist für deine eigenen Kosten in der neuen Wohnung.</p></div>
     </div>`;
@@ -2844,22 +2853,22 @@ function renderFinDash() {
 function renderSpending() {
   const list = Finance.spending(finMonth), budget = Finance.budget();
   const byCat = {};
-  list.forEach(e => { byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; });
-  const cats = SPEND_CATS.filter(c => budget[c[0]] || byCat[c[0]]);
+  list.filter(e => !e.inc && e.cat !== 'fix').forEach(e => { byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; });
+  const cats = MANUAL_CATS.filter(c => budget[c[0]] || byCat[c[0]]);
   const groups = {};
   list.forEach(e => { (groups[e.date] = groups[e.date] || []).push(e); });
   return `<div class="row-between wrap" style="margin-bottom:16px"><div class="date-nav"><button class="icon-btn bordered" data-act="finMonth" data-d="-1" aria-label="Vorheriger Monat">${icon('left')}</button>
       <b>${monthName(finMonth)}</b><button class="icon-btn bordered" data-act="finMonth" data-d="1" aria-label="Nächster Monat"${finMonth >= todayKey().slice(0, 7) ? ' disabled' : ''}>${icon('right')}</button></div>
-      <button class="btn btn-primary" data-act="spendNew">${icon('plus')}Ausgabe</button></div>
+      <div class="row">${fgLoadBtn('Finanzguru laden')}<button class="btn btn-primary" data-act="spendNew">${icon('plus')}Ausgabe</button></div></div>
     <div class="grid"><div class="card span-5"><div class="card-head"><h2>${icon('wallet')}Budget</h2><button class="btn btn-ghost btn-s" data-act="budgetEdit">Bearbeiten</button></div>
-      <p class="stat-value" style="margin:0 0 12px">${eur(sum(list.map(e => e.amount)))}<small>${sum(Object.values(budget)) ? ' von ' + eur(sum(Object.values(budget))) : ''}</small></p>
+      <p class="stat-value" style="margin:0 0 12px">${eur(Finance.spent(finMonth))}<small>${sum(Object.values(budget)) ? ' von ' + eur(sum(Object.values(budget))) : ''}</small></p>
       <div class="stack">${cats.map(c => {
         const v = byCat[c[0]] || 0, b = budget[c[0]] || 0;
         return `<div class="macro"><div class="macro-head"><span class="row" style="gap:6px">${icon(c[2], 'ic-s')}${c[1]}</span><span class="num"><b>${eur(v)}</b>${b ? ' / ' + eur(b) : ''}</span></div>
           ${b ? `<div class="bar${v > b ? ' over' : ''}"><span style="width:${clamp(v / b * 100, 0, 100)}%"></span></div>` : ''}</div>`;
       }).join('') || '<p class="muted">Leg Monatsbudgets fest, dann siehst du hier, wie viel noch übrig ist.</p>'}</div></div>
-    <div class="card span-7" style="padding:6px 16px">${Object.keys(groups).map(d => `<p class="stat-label" style="margin:14px 4px 4px">${fmtDate(d, { day: true })} · ${eur(sum(groups[d].map(e => e.amount)))}</p>
-      <div class="list">${groups[d].map(e => { const c = spendCat(e.cat); return `<button class="li" data-act="spendEdit" data-id="${e.id}"><span class="tile-ic" style="width:34px;height:34px;border-radius:10px">${icon(c[2], 'ic-s')}</span><div class="li-main"><div class="li-title">${esc(e.note || c[1])}</div><div class="li-sub">${c[1]}</div></div><span class="li-end">${eur(e.amount)}</span></button>`; }).join('')}</div>`).join('')
+    <div class="card span-7" style="padding:6px 16px">${Object.keys(groups).map(d => `<p class="stat-label" style="margin:14px 4px 4px">${fmtDate(d, { day: true })} · ${eur(sum(groups[d].filter(e => !e.inc).map(e => e.amount)))}</p>
+      <div class="list">${groups[d].map(e => { const c = spendCat(e.cat); return `<button class="li" data-act="spendEdit" data-id="${e.id}"><span class="tile-ic" style="width:34px;height:34px">${icon(c[2], 'ic-s')}</span><div class="li-main"><div class="li-title">${esc(e.note || c[1])}</div><div class="li-sub">${c[1]}${e.src === 'fg' ? ' · Konto' + (e.account ? ' ' + esc(e.account) : '') : ''}</div></div><span class="li-end"${e.inc ? ' style="color:var(--good)"' : ''}>${e.inc ? '+' : ''}${eur(e.amount)}</span></button>`; }).join('')}</div>`).join('')
       || emptyState('wallet', 'Keine Ausgaben in diesem Monat.', `<button class="btn btn-primary" data-act="spendNew">Ausgabe eintragen</button>`)}</div></div>`;
 }
 A.finMonth = el => { const n = shiftMonth(finMonth, +el.dataset.d); if (n <= todayKey().slice(0, 7)) { finMonth = n; rerender(); } };
@@ -2871,23 +2880,24 @@ function spendSheet(isNew) {
   Sheet.open(`${sheetHead(isNew ? 'Ausgabe eintragen' : 'Ausgabe bearbeiten')}
     <form class="stack" data-submit="spendSave">
       <label class="field">Betrag (€)<input class="input" name="amount" inputmode="decimal" value="${d.amount === '' ? '' : fmtFixed(d.amount, 2)}" placeholder="0,00" style="font-size:28px;font-weight:700;min-height:58px" autofocus required></label>
-      <div class="field"><span>Kategorie</span><div class="chips">${SPEND_CATS.map(c => `<label class="chip chip-btn${c[0] === d.cat ? ' active' : ''}"><input type="radio" name="cat" value="${c[0]}"${c[0] === d.cat ? ' checked' : ''} class="sr" data-change="chipRadio">${c[1]}</label>`).join('')}</div></div>
+      <div class="field"><span>Kategorie</span><div class="chips">${(d.inc ? SPEND_CATS.filter(c => c[0] === 'einnahme') : SPEND_CATS.filter(c => c[0] !== 'einnahme')).map(c => `<label class="chip chip-btn${c[0] === d.cat ? ' active' : ''}"><input type="radio" name="cat" value="${c[0]}"${c[0] === d.cat ? ' checked' : ''} class="sr" data-change="chipRadio">${c[1]}</label>`).join('')}</div></div>
       <div class="fields"><label class="field">Notiz<input class="input" name="note" value="${esc(d.note)}" placeholder="z. B. Rewe, Kino"></label>
       <label class="field">Datum<input class="input" type="date" name="date" value="${d.date}" max="${todayKey()}"></label></div>
+      ${d.memo ? `<p class="small muted">Verwendungszweck: ${esc(d.memo)}</p>` : ''}
       <div class="sheet-actions">${isNew ? '' : `<button type="button" class="btn btn-danger" data-act="spendDelete">${icon('trash')}Löschen</button>`}<button type="button" class="btn" data-act="closeSheet">Abbrechen</button><button class="btn btn-primary">Speichern</button></div></form>`);
 }
 A.chipRadio = el => { $$('input[name="' + el.name + '"]', el.closest('form')).forEach(r => r.closest('.chip').classList.toggle('active', r.checked)); };
 A.spendSave = f => {
   const d = formData(f), amount = Math.round(num(d.amount) * 100) / 100;
   if (!(amount > 0)) return toast('Bitte einen Betrag eingeben');
-  Finance.saveSpend({ id: spendDraft.id, amount, cat: d.cat || 'sonst', note: d.note.trim(), date: d.date || todayKey(), ts: spendDraft.ts || Date.now() });
+  Finance.saveSpend(Object.assign({}, spendDraft, { amount, cat: d.cat || 'sonst', note: d.note.trim(), date: d.date || todayKey(), ts: spendDraft.ts || Date.now() }));
   finMonth = (d.date || todayKey()).slice(0, 7);
   Sheet.close(); toast(`${eur(amount)} eingetragen`); rerender();
 };
 A.spendDelete = () => { Finance.removeSpend(spendDraft.id); Sheet.close(); toast('Gelöscht'); rerender(); };
 A.budgetEdit = () => {
   const b = Finance.budget();
-  Sheet.open(`${sheetHead('Monatsbudgets', 'Leer lassen für kein Budget')}<form class="stack" data-submit="budgetSave"><div class="fields">${SPEND_CATS.map(c => `<label class="field">${c[1]} (€)<input class="input" name="${c[0]}" inputmode="decimal" value="${b[c[0]] ? fmt(b[c[0]], 2) : ''}"></label>`).join('')}</div>
+  Sheet.open(`${sheetHead('Monatsbudgets', 'Leer lassen für kein Budget')}<form class="stack" data-submit="budgetSave"><div class="fields">${MANUAL_CATS.map(c => `<label class="field">${c[1]} (€)<input class="input" name="${c[0]}" inputmode="decimal" value="${b[c[0]] ? fmt(b[c[0]], 2) : ''}"></label>`).join('')}</div>
     <div class="sheet-actions"><button type="button" class="btn" data-act="closeSheet">Abbrechen</button><button class="btn btn-primary">Speichern</button></div></form>`);
 };
 A.budgetSave = f => { const d = formData(f), b = {}; Object.keys(d).forEach(k => { const v = num(d[k]); if (v > 0) b[k] = v; }); Store.set('budget', b); Sheet.close(); toast('Budgets gespeichert'); rerender(); };
@@ -2899,6 +2909,7 @@ function renderFixed() {
   all.forEach(f => { (groups[f.cat] = groups[f.cat] || []).push(f); });
   return `<div class="row-between wrap" style="margin-bottom:16px"><p><b style="font-size:22px">${eur(Finance.monthlyFixed())}</b> <span class="muted">pro Monat · ${eur(Finance.monthlyFixed() * 12)} im Jahr</span></p>
       <button class="btn btn-primary" data-act="fixEdit">${icon('plus')}Fixkosten</button></div>
+    ${fgSuggestCard('', true)}
     ${all.length ? '' : `<div class="card" style="margin-bottom:16px"><p class="muted" style="margin-bottom:12px">Schnell anlegen – Betrag trägst du danach ein:</p><div class="chips">${FIX_SUGGEST.map((s, i) => `<button class="chip chip-btn" data-act="fixSuggest" data-i="${i}">${s[0]}</button>`).join('')}</div></div>`}
     <div class="grid">${FIX_CATS.filter(c => groups[c]).map(c => `<div class="card span-6"><div class="card-head"><h2>${c}</h2><span class="num muted">${eur(sum(groups[c].filter(f => f.active !== false).map(f => Finance.perMonth(f))))} / Monat</span></div>
       <div class="list">${groups[c].map(f => `<button class="li" data-act="fixEdit" data-id="${f.id}"${f.active === false ? ' style="opacity:.5"' : ''}><div class="li-main"><div class="li-title">${esc(f.name)}</div>
@@ -2932,6 +2943,28 @@ A.fixSave = form => {
   if (route().sub === 'fixkosten') rerender(); else go('finanzen/fixkosten');
 };
 A.fixDelete = el => { Finance.saveFixed(Finance.fixed().filter(x => x.id !== el.dataset.id)); Sheet.close(); rerender(); };
+
+/* Wiederkehrende Abbuchungen aus dem Finanzguru-Export als Fixkosten vorschlagen */
+function fgSuggestCard(cls, spaced) {
+  const fg = Store.get('fgMeta', null);
+  if (!fg || !fg.recurring || !fg.recurring.length) return '';
+  const have = new Set(Finance.fixed().map(f => f.name.toLowerCase()));
+  const open = fg.recurring.filter(r => !have.has(String(r.name).toLowerCase()) && !(Store.get('fgIgnored', []) || []).includes(r.key));
+  if (!open.length) return '';
+  return `<div class="card ${cls}"${spaced ? ' style="margin-bottom:16px"' : ''}><div class="card-head"><h2>${icon('calendar')}Wiederkehrend laut Konto</h2><span class="muted small">aus Finanzguru erkannt</span></div>
+    <div class="list wrap-sub">${open.slice(0, 8).map(r => `<div class="li"><div class="li-main"><div class="li-title">${esc(r.name)}</div><div class="li-sub">in ${r.count} Monaten · zuletzt ${fmtDate(r.last)}</div></div>
+      <span class="li-end">${eur(r.amount)}</span><button class="btn btn-s" data-act="fgTake" data-k="${esc(r.key)}">Übernehmen</button><button class="set-del" data-act="fgIgnore" data-k="${esc(r.key)}" aria-label="Nicht übernehmen">${icon('x', 'ic-s')}</button></div>`).join('')}</div></div>`;
+}
+const FIX_GUESS = [['Wohnen', /miete|nebenkosten|hausgeld|rundfunk|beitragsservice/i], ['Energie', /strom|gas|energie|stadtwerke|eon|e\.on|vattenfall|enbw|tibber/i], ['Versicherung', /versicherung|allianz|huk|ergo|axa|devk|generali|signal iduna/i],
+  ['Kommunikation', /telekom|vodafone|o2|telefonica|1&1|congstar|internet|mobilfunk/i], ['Sport', /wellpass|egym|fitness|urban sports|mcfit/i], ['Mobilität', /bahn|deutschlandticket|mvv|leasing|kfz/i], ['Abos', /netflix|spotify|disney|amazon prime|apple|youtube|dazn|wow|sky|icloud|google/i]];
+A.fgTake = el => {
+  const r = (Store.get('fgMeta', {}).recurring || []).find(x => x.key === el.dataset.k);
+  if (!r) return;
+  const g = FIX_GUESS.find(([, re]) => re.test(r.name));
+  Finance.saveFixed(Finance.fixed().concat([{ id: uid(), name: r.name, amount: r.amount, interval: 'm', cat: g ? g[0] : 'Sonstiges', day: +r.last.slice(8) || '', startMonth: '', note: 'aus Finanzguru', active: true }]));
+  toast(`${r.name} als Fixkosten übernommen`); rerender();
+};
+A.fgIgnore = el => { Store.set('fgIgnored', (Store.get('fgIgnored', []) || []).concat([el.dataset.k])); rerender(); };
 
 /* ---------- Zählerstände ---------- */
 function meterStats(type) {
@@ -2979,6 +3012,210 @@ V.finanzen = {
     return pageHead('Finanzen', '') + tabs('finanzen', [['', 'Übersicht'], ['ausgaben', 'Ausgaben'], ['fixkosten', 'Fixkosten'], ['zaehler', 'Zähler']], r.sub) + body();
   }
 };
+
+/* =====================================================================
+   Finanzguru-Export (Excel .xlsx oder CSV) in die Finanzen übernehmen.
+   Spalten laut Export: Name Referenzkonto, Buchungstag,
+   Beguenstigter/Auftraggeber, Verwendungszweck, Betrag (+ ggf. Kategorie)
+   ===================================================================== */
+const FgImport = (() => {
+  const norm = s => String(s || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]/g, '');
+  const COLS = {
+    date: ['buchungstag', 'buchungsdatum', 'datum', 'valuta', 'wertstellung'],
+    amount: ['betrag', 'betrageur', 'umsatz'],
+    payee: ['beguenstigterauftraggeber', 'beguenstigter', 'auftraggeber', 'empfaenger', 'zahlungsempfaenger', 'name', 'gegenpartei'],
+    memo: ['verwendungszweck', 'buchungstext', 'beschreibung'],
+    account: ['namereferenzkonto', 'referenzkonto', 'konto', 'kontoname'],
+    category: ['analysehauptkategorie', 'hauptkategorie', 'kategorie', 'analysekategorie'],
+    sub: ['analyseunterkategorie', 'unterkategorie'],
+    contract: ['analysevertrag', 'vertrag', 'vertragsname']
+  };
+
+  /* ---------- Excel lesen (ZIP + XML) ---------- */
+  async function readXlsx(buf) {
+    const text = async name => { try { return new TextDecoder().decode(await NoopBak.unzipEntry(buf, n => n === name)); } catch (e) { return null; } };
+    const parse = s => new DOMParser().parseFromString(s, 'application/xml');
+    const shared = [];
+    const ss = await text('xl/sharedStrings.xml');
+    if (ss) Array.from(parse(ss).getElementsByTagName('si')).forEach(si => shared.push(Array.from(si.getElementsByTagName('t')).map(t => t.textContent).join('')));
+    let sheetPath = 'xl/worksheets/sheet1.xml';
+    const wb = await text('xl/workbook.xml'), rels = await text('xl/_rels/workbook.xml.rels');
+    if (wb && rels) {
+      const first = parse(wb).getElementsByTagName('sheet')[0];
+      const rid = first && (first.getAttribute('r:id') || first.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id'));
+      const rel = Array.from(parse(rels).getElementsByTagName('Relationship')).find(r => r.getAttribute('Id') === rid);
+      if (rel) sheetPath = 'xl/' + rel.getAttribute('Target').replace(/^\/?xl\//, '').replace(/^\//, '');
+    }
+    const sheet = await text(sheetPath);
+    if (!sheet) throw new Error('In der Excel-Datei fehlt das Tabellenblatt.');
+    const rows = [];
+    Array.from(parse(sheet).getElementsByTagName('row')).forEach(row => {
+      const out = [];
+      Array.from(row.getElementsByTagName('c')).forEach(c => {
+        const ref = c.getAttribute('r') || '', col = ref.replace(/\d+/g, '');
+        let idx = 0;
+        for (const ch of col) idx = idx * 26 + (ch.charCodeAt(0) - 64);
+        const t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+        let val;
+        if (t === 's') val = shared[+v.textContent];
+        else if (t === 'inlineStr') val = Array.from(c.getElementsByTagName('t')).map(x => x.textContent).join('');
+        else if (t === 'b') val = v ? v.textContent === '1' : '';
+        else if (t === 'str' || t === 'e') val = v ? v.textContent : '';
+        else val = v ? +v.textContent : '';
+        out[(idx || out.length + 1) - 1] = val;
+      });
+      rows.push(Array.from(out, x => x === undefined ? '' : x));
+    });
+    return rows;
+  }
+
+  /* ---------- CSV lesen (; oder , oder Tab, Anführungszeichen) ---------- */
+  function readCsv(text) {
+    text = text.replace(/^﻿/, '');
+    const first = text.split(/\r?\n/).find(l => l.trim()) || '';
+    const delim = [';', '\t', ','].sort((a, b) => first.split(b).length - first.split(a).length)[0];
+    const rows = [];
+    let row = [], cur = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) {
+        if (ch === '"' && text[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === delim) { row.push(cur); cur = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+      else cur += ch;
+    }
+    if (cur || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
+  /* ---------- Werte umwandeln ---------- */
+  function toAmount(v) {
+    if (typeof v === 'number') return v;
+    let s = String(v || '').replace(/[€\s]|EUR/gi, '');
+    if (!s) return NaN;
+    if (/,\d{1,2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');   // 1.234,56
+    else s = s.replace(/,/g, '');                                           // 1,234.56
+    return parseFloat(s);
+  }
+  function toDate(v) {
+    if (typeof v === 'number' && v > 20000 && v < 80000) {                // Excel-Seriennummer
+      const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 864e5);
+      return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+    }
+    const s = String(v || '').trim();
+    let m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+    if (m) return `${m[3].length === 2 ? '20' + m[3] : m[3]}-${pad2(+m[2])}-${pad2(+m[1])}`;
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    return null;
+  }
+
+  /* ---------- Kategorien ---------- */
+  const RULES = [
+    ['lebensmittel', /rewe|edeka|aldi|lidl|netto|penny|kaufland|norma|tegut|globus|\breal\b|bäck|baeck|backhaus|metzger|supermarkt|lebensmittel|hit markt|denns|alnatura|bio company/],
+    ['essen', /restaurant|lieferando|wolt|uber ?eats|mc ?donald|burger king|starbucks|caf[eé]|pizza|d[öo]ner|kebab|imbiss|gastro|sushi|bar\b|biergarten|essen & trinken|essen und trinken|restaurants/],
+    ['einrichtung', /ikea|m[öo]bel|xxxlutz|poco|segm[üu]ller|hornbach|obi\b|bauhaus|toom|home24|depot|wohnen & einrichtung|einrichtung|baumarkt/],
+    ['haushalt', /dm[- ]drogerie|\bdm\b|rossmann|m[üu]ller drogerie|drogerie m[üu]ller|drogerie|haushalt|amazon/],
+    ['mobil', /tank|aral|shell|esso|\bjet\b|totalenergies|deutsche bahn|db vertrieb|\bbahn\b|mvv|mvg|hvv|bvg|uber\b|bolt|tier|lime|sixt|share now|parken|park|flixbus|mobilit|verkehr|auto/],
+    ['sport', /wellpass|egym|fitness|decathlon|urban sports|sportscheck|sport/],
+    ['kleidung', /zalando|h&m|\bzara\b|about you|primark|c&a|snipes|nike|adidas|kleidung|mode|bekleidung/],
+    ['gesundheit', /apotheke|arzt|zahnarzt|praxis|docmorris|shop apotheke|gesundheit|optiker|krankenhaus/],
+    ['freizeit', /kino|cinema|steam|playstation|nintendo|eventim|ticket|museum|freizeit|urlaub|reise|hotel|airbnb|booking|unterhaltung|hobby/],
+    ['geschenke', /geschenk|spende/]
+  ];
+  const TRANSFER = /umbuchung|übertrag|uebertrag|eigene? konten|sparen|sparplan|geldanlage|depot|trade republic|scalable|tagesgeld|kreditkartenabrechnung|kreditkarte ausgleich/;
+  function category(t) {
+    const hay = `${t.cat || ''} ${t.sub || ''} ${t.payee || ''} ${t.memo || ''}`.toLowerCase();
+    const r = RULES.find(([, re]) => re.test(hay));
+    return r ? r[0] : 'sonst';
+  }
+  const hash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); };
+
+  /* ---------- Hauptfunktion ---------- */
+  async function read(file) {
+    const buf = await file.arrayBuffer();
+    const isZip = new Uint8Array(buf, 0, 2)[0] === 0x50 && new Uint8Array(buf, 0, 2)[1] === 0x4b;
+    const rows = isZip ? await readXlsx(buf) : readCsv(new TextDecoder(isUtf8(buf) ? 'utf-8' : 'windows-1252').decode(buf));
+    // Kopfzeile suchen: die erste Zeile mit Datum und Betrag
+    let hi = -1, map = null;
+    for (let i = 0; i < Math.min(rows.length, 30); i++) {
+      const h = rows[i].map(norm), m = {};
+      Object.keys(COLS).forEach(k => { const j = h.findIndex(x => COLS[k].includes(x)); if (j >= 0) m[k] = j; });
+      if (m.date != null && m.amount != null) { hi = i; map = m; break; }
+    }
+    if (hi < 0) throw new Error('Keine Spalten „Buchungstag“ und „Betrag“ gefunden. Ist das der Finanzguru-Umsatzexport?');
+    const tx = [];
+    let skipped = 0;
+    rows.slice(hi + 1).forEach(r => {
+      const date = toDate(r[map.date]), amount = toAmount(r[map.amount]);
+      if (!date || !isFinite(amount) || amount === 0) return;
+      const t = { date, amount: Math.round(amount * 100) / 100 };
+      ['payee', 'memo', 'account', 'category', 'sub', 'contract'].forEach(k => { if (map[k] != null && r[map[k]] !== '') t[k === 'category' ? 'cat' : k] = String(r[map[k]]).trim().slice(0, k === 'memo' ? 90 : 60); });
+      if (TRANSFER.test(`${t.cat || ''} ${t.sub || ''} ${t.memo || ''}`.toLowerCase())) { skipped++; return; }
+      tx.push(t);
+    });
+    return { tx, skipped };
+  }
+  function isUtf8(buf) { try { new TextDecoder('utf-8', { fatal: true }).decode(buf); return true; } catch (e) { return false; } }
+
+  // Wiederkehrende Abbuchungen (Verträge): gleicher Empfänger in mindestens 3 Monaten, fast gleicher
+  // Betrag (±3 %) und ähnlicher Tag im Monat; Alltagskäufe (Lebensmittel, Essen, Tanken …) zählen nicht
+  const DAILY = new Set(['lebensmittel', 'essen', 'mobil', 'haushalt', 'kleidung', 'einrichtung', 'gesundheit']);
+  function recurring(tx) {
+    const by = {};
+    tx.filter(t => t.amount < 0 && (t.payee || t.contract)).forEach(t => { const k = norm(t.contract || t.payee); (by[k] = by[k] || []).push(t); });
+    const out = [];
+    Object.keys(by).forEach(k => {
+      const list = by[k], months = new Set(list.map(t => t.date.slice(0, 7)));
+      if (months.size < 3) return;
+      const isContract = list.some(t => t.contract);
+      const amounts = list.map(t => -t.amount).sort((a, b) => a - b), med = amounts[Math.floor(amounts.length / 2)];
+      if (!isContract && med < 150 && DAILY.has(category(list[0]))) return;
+      const days = list.map(t => +t.date.slice(8));
+      if (!isContract && (amounts.filter(a => Math.abs(a - med) <= med * 0.03).length < months.size * 0.75 || Math.max(...days) - Math.min(...days) > 6)) return;
+      out.push({ key: k, name: list[0].contract || list[0].payee, amount: Math.round(med * 100) / 100, count: months.size, last: list.map(t => t.date).sort().pop() });
+    });
+    return out.sort((a, b) => b.amount - a.amount);
+  }
+
+  // Ins Dashboard übernehmen: Ausgaben und Einnahmen in die Monats-Eimer, doppelte erkennen
+  function apply(res, fileName) {
+    const rec = recurring(res.tx), recKeys = new Set(rec.map(r => r.key));
+    const buckets = {};
+    let added = 0, dup = 0;
+    res.tx.forEach(t => {
+      const id = 'fg-' + hash([t.date, t.amount, t.payee, t.memo, t.account].join('|'));
+      const key = 'a-' + t.date.slice(0, 7);
+      const b = buckets[key] = buckets[key] || (Store.get(key, []) || []).slice();
+      if (b.some(x => x.id === id)) { dup++; return; }
+      const isFix = t.amount < 0 && recKeys.has(norm(t.contract || t.payee));
+      b.push({ id, src: 'fg', date: t.date, ts: 0, amount: Math.abs(t.amount), inc: t.amount > 0 || undefined,
+        cat: t.amount > 0 ? 'einnahme' : isFix ? 'fix' : category(t), note: t.payee || t.memo || '', memo: t.memo || '', account: t.account || '' });
+      added++;
+    });
+    Object.keys(buckets).forEach(k => Store.set(k, buckets[k]));
+    const dates = res.tx.map(t => t.date).sort();
+    Store.set('fgMeta', { loaded: Date.now(), file: fileName, from: dates[0], to: dates[dates.length - 1], count: res.tx.length, added, dup, skipped: res.skipped, recurring: rec.slice(0, 40) });
+    return { added, dup, skipped: res.skipped, recurring: rec.length };
+  }
+  return { read, apply, readCsv, toAmount, toDate, category, recurring };
+})();
+
+A.fgLoad = async el => {
+  const file = el.files && el.files[0];
+  if (!file) return;
+  toast('Finanzguru-Export wird gelesen …');
+  try {
+    const r = FgImport.apply(await FgImport.read(file), file.name);
+    toast(`${r.added} Umsätze übernommen${r.dup ? `, ${r.dup} schon vorhanden` : ''}${r.skipped ? `, ${r.skipped} Umbuchungen ausgelassen` : ''}`);
+    rerender();
+  } catch (e) {
+    toast(e && e.message ? e.message : 'Die Datei konnte nicht gelesen werden');
+  }
+  el.value = '';
+};
+const fgLoadBtn = (label, cls, raw) => `<label class="${cls || 'btn'}" style="cursor:pointer">${raw ? '' : icon('sync')}${label}<input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-change="fgLoad" hidden></label>`;
 
 /* =====================================================================
    Planer: Kalender, Aufgaben, Einkaufsliste

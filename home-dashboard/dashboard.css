@@ -767,3 +767,4 @@ h1, .hero h1, .tile h2, .room h2, .sheet-head h2 { font-family: var(--font); fon
 .kpis:not(.no-hl) > .card:first-child .week-dots .today { color: #fff; }
 .kpis:not(.no-hl) > .card:first-child .week-dots i { background: rgba(255, 255, 255, .2); }
 .kpis:not(.no-hl) > .card:first-child .week-dots i.on { background: #fff; color: #0c8a60; }
+.wrap-sub .li-title { white-space: normal; overflow-wrap: anywhere; }
