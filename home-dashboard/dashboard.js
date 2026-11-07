@@ -333,7 +333,7 @@ const AREA_ICONS = { heute: 'home', training: 'gym', essen: 'food', laufen: 'run
 function renderTopbar() {
   const p = pageOf(PAGE) || PAGES[0], s = settings();
   $('#topbar').innerHTML = `<div class="tb-inner">${PAGE === 'heute'
-    ? `<span class="avatar" aria-hidden="true">${esc((s.name || 'J').trim().charAt(0).toUpperCase())}</span><span class="tb-welcome">Willkommen, ${esc(s.name)}<small>Dein Zuhause-Dashboard</small></span>`
+    ? `<span class="avatar" aria-hidden="true">${esc((s.name || 'J').trim().charAt(0).toUpperCase())}</span><span class="tb-welcome">${esc(s.name)}<small>Zuhause</small></span>`
     : `<a class="tb-back" href="index.html" aria-label="Zur Startseite">${icon('left')}Start</a><span class="tb-title">${icon(AREA_ICONS[PAGE])}<span>${esc(p.name)}</span></span>`}
     <div class="tb-actions">${PAGE === 'einstellungen' ? '' : `<a class="icon-btn" href="einstellungen.html" aria-label="Einstellungen">${icon('settings')}</a>`}</div></div>`;
   // Bereichs-Leiste (links am Desktop, unten am Handy)
@@ -352,8 +352,7 @@ function rerender(keepScroll) {
   AfterRender.length = 0;
   Charts.reset();
   const html = V[view].render(r);
-  $('#view').innerHTML = `<div class="view-inner">${html}</div>`;
-  if (sameRoute) $('#view .view-inner').style.animation = 'none';
+  $('#view').innerHTML = `<div class="view-inner${lastRouteKey ? '' : ' enter'}">${html}</div>`;
   AfterRender.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
   Charts.drawAll();
   if (sameRoute || keepScroll) window.scrollTo(0, y); else window.scrollTo(0, 0);
@@ -507,7 +506,7 @@ const RestTimer = {
       this.doneUntil = Date.now() + 5000;
       Beep.play(3); Beep.buzz();
       if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-        try { new Notification('Pause vorbei', { body: 'Weiter mit dem nächsten Satz!' }); } catch (e) { /* ok */ }
+        try { new Notification('Pause vorbei', { body: 'Weiter mit dem nächsten Satz' }); } catch (e) { /* ok */ }
       }
     }
     if (!this.st && Date.now() > this.doneUntil) { clearInterval(this.iv); this.iv = null; }
@@ -545,7 +544,7 @@ function tabs(base, items, active) {
     `<a class="tab${id === active ? ' active' : ''}" href="#/${base}${id ? '/' + id : ''}"${id === active ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>`;
 }
 function emptyState(ic, text, action) {
-  return `<div class="empty">${icon(ic)}<p>${text}</p>${action ? `<div style="margin-top:14px">${action}</div>` : ''}</div>`;
+  return `<div class="empty">${icon(ic)}<p>${text}</p>${action ? `<div style="margin-top:16px">${action}</div>` : ''}</div>`;
 }
 
 /* =====================================================================
@@ -1001,13 +1000,9 @@ function scaleFood(food, grams) {
 /* =====================================================================
    Startseite: eine Kachel je Bereich, darunter der Tag auf einen Blick
    ===================================================================== */
-function greeting() {
-  const h = new Date().getHours();
-  return h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 17 ? 'Hallo' : h < 22 ? 'Guten Abend' : 'Gute Nacht';
-}
-function tile(view, title, stat, sub, extra) {
+function tile(view, title, stat, sub, extra, cls) {
   const p = pageOf(view);
-  return `<a class="tile" href="${p.file}"><div class="tile-top"><span class="tile-ic">${icon(AREA_ICONS[view])}</span>${icon('right', 'ic-s')}</div>
+  return `<a class="tile ${cls || ''}" href="${p.file}"><div class="tile-top"><span class="tile-ic">${icon(AREA_ICONS[view])}</span>${icon('right', 'ic-s')}</div>
     <h2>${title}</h2><div class="tile-stat"><b>${stat}</b><p>${sub}</p>${extra || ''}</div></a>`;
 }
 V.heute = {
@@ -1035,18 +1030,19 @@ V.heute = {
       const g = Workouts.all().filter(w => dkey(w.start) === k).map(w => w.name), r = Runs.all().filter(x => dkey(x.start) === k).map(x => fmt(x.km, 1) + ' km');
       return `${fmtDate(k, { day: true, plain: true })}: ${g.concat(r).join(', ') || (Diary.hasEntries(k) ? 'Essen eingetragen' : 'Ruhetag')}`;
     };
-    return `<header class="hero"><div><h1>${greeting()}, ${esc(s.name)}</h1>
-        <p class="sub">${DAYS_LONG[now.getDay()]}, ${now.getDate()}. ${MONTHS_LONG[now.getMonth()]} · ${parts.length ? parts.join(' · ') : 'Heute ist noch alles offen.'}</p></div>
+    return `<header class="hero"><div><h1>${DAYS_LONG[now.getDay()]}, ${now.getDate()}. ${MONTHS_LONG[now.getMonth()]}</h1>
+        <p class="sub">${parts.length ? parts.join(' · ') : 'Noch nichts eingetragen'}</p></div>
         <span class="hero-time" data-tick="clock">${fmtTime(Date.now())}</span></header>
       ${active ? `<a class="banner" href="training.html#/training/aktiv">${icon('gym')}<div class="grow">${esc(active.name)} läuft<small><span data-tick="wo">${fmtDur((Date.now() - active.start) / 1000)}</span> · weiter trainieren</small></div>${icon('right')}</a>` : ''}
       ${live ? `<a class="banner" href="laufen.html#/laufen/live">${icon('run')}<div class="grow">Lauf wird aufgezeichnet<small>${fmt((LiveRun.st.dist || 0) / 1000, 2)} km</small></div>${icon('right')}</a>` : ''}
       <nav class="tiles" aria-label="Bereiche">
-        ${tile('training', 'Training', `${weekWo}<small>/ ${s.weekGoal}</small>`, active ? 'Training läuft gerade' : 'Trainings diese Woche', `<div class="bar"><span style="width:${clamp(weekWo / s.weekGoal * 100, 0, 100)}%"></span></div>`)}
-        ${tile('essen', 'Ernährung', `${fmt(Math.abs(left))}<small>kcal</small>`, left < 0 ? 'über dem Ziel' : 'heute noch übrig', `<div class="bar${left < 0 ? ' over' : ''}"><span style="width:${clamp(tot.kcal / Math.max(1, s.kcalGoal + ex) * 100, 0, 100)}%"></span></div>`)}
-        ${tile('laufen', 'Laufen', `${fmt(yearKm)}<small>km</small>`, `${now.getFullYear()} · diese Woche ${fmt(weekKm, 1)} km`, `<div class="bar"><span style="width:${clamp(yearKm / s.runYearGoal * 100, 0, 100)}%"></span></div>`)}
-        ${tile('zuhause', 'Zuhause', 'Fernbedienung', HA.ready() ? 'Wohnzimmer-TV · Smart Home verbunden' : 'Wohnzimmer-TV · Smart Home folgt')}
-        ${tile('finanzen', 'Finanzen', `${fmt(Finance.spent(m))}<small>€</small>`, `ausgegeben im ${MONTHS_LONG[now.getMonth()]}${Finance.monthlyFixed() ? ` · fix ${fmt(Finance.monthlyFixed())} €` : ''}`)}
-        ${tile('planer', 'Planer', `${due.length}<small>${due.length === 1 ? 'Aufgabe' : 'Aufgaben'}</small>`, next ? `Nächster Termin: ${fmtDate(next.k, { day: true })}${next.e.time ? ' ' + next.e.time : ''}` : shopOpen ? `${shopOpen} Dinge auf der Einkaufsliste` : 'heute fällig')}
+        ${tile('training', 'Trainingswoche', `${weekWo}<small>von ${s.weekGoal} Trainings</small>`, active ? 'Training läuft gerade' : weekWo >= s.weekGoal ? 'Wochenziel erreicht' : `noch ${s.weekGoal - weekWo} bis zum Wochenziel`,
+          `<div class="week-dots">${Array.from({ length: 7 }, (_, i) => { const k = addDays(ws, i), on = Workouts.all().some(w => dkey(w.start) === k); return `<div class="${k === t ? 'today' : ''}"><i class="${on ? 'on' : ''}">${on ? icon('check', 'ic-s') : ''}</i>${DAYS[parseKey(k).getDay()]}</div>`; }).join('')}</div>`, 'tile-moment')}
+        ${tile('essen', 'Ernährung', `${fmt(Math.abs(left))}<small>kcal</small>`, left < 0 ? 'über dem Ziel' : 'heute noch übrig')}
+        ${tile('laufen', 'Laufen', `${fmt(yearKm)}<small>km</small>`, `${now.getFullYear()} · diese Woche ${fmt(weekKm, 1)} km`)}
+        ${tile('zuhause', 'Zuhause', 'Fernbedienung', HA.ready() ? 'Wohnzimmer-TV · Smart Home verbunden' : 'Wohnzimmer-TV · Smart Home folgt', '', 'tile-full-m')}
+        ${tile('finanzen', 'Finanzen', `${fmt(Finance.spent(m))}<small>€</small>`, `ausgegeben im ${MONTHS_LONG[now.getMonth()]}${Finance.monthlyFixed() ? ` · fix ${fmt(Finance.monthlyFixed())} €` : ''}`, '', 'tile-wide')}
+        ${tile('planer', 'Planer', `${due.length}<small>${due.length === 1 ? 'Aufgabe' : 'Aufgaben'}</small>`, next ? `Nächster Termin: ${fmtDate(next.k, { day: true })}${next.e.time ? ' ' + next.e.time : ''}` : shopOpen ? `${shopOpen} Dinge auf der Einkaufsliste` : 'heute fällig', '', 'tile-wide')}
       </nav>
       <div class="grid">
         ${noopHomeCard()}
@@ -1054,14 +1050,14 @@ V.heute = {
           ${evToday.length ? `<div class="list">${evToday.map(e => eventRow(e)).join('')}</div>` : ''}
           ${due.length ? `<div class="tasks" style="margin-top:${evToday.length ? 10 : 0}px">${due.slice(0, 6).map(taskRow).join('')}</div>` : ''}
           ${!evToday.length && !due.length ? `<p class="empty">Keine Termine und keine fälligen Aufgaben.${next ? ` Als Nächstes: ${esc(next.e.title)}, ${fmtDate(next.k, { day: true })}.` : ''}</p>` : ''}
-          <form class="row" data-submit="taskQuick" style="margin-top:12px"><input class="input grow" name="title" placeholder="Aufgabe für heute … (Enter)" autocomplete="off" aria-label="Neue Aufgabe für heute"></form></div>
+          <form class="row" data-submit="taskQuick" style="margin-top:12px"><input class="input grow" name="title" placeholder="Aufgabe für heute" autocomplete="off" aria-label="Neue Aufgabe für heute"></form></div>
         <div class="card span-6"><div class="card-head"><h2>${icon('bolt')}Schnell eintragen</h2></div>
           <div class="quick" style="margin:0;grid-template-columns:repeat(2,minmax(0,1fr))">
             <button class="quick-btn" data-act="${active ? 'goActive' : 'homeStartWo'}"><span class="qi">${icon('gym')}</span><span>${active ? 'Weiter trainieren' : 'Training starten'}</span></button>
             <button class="quick-btn" data-act="homeAddFood"><span class="qi">${icon('food')}</span><span>Essen</span></button>
             <button class="quick-btn" data-act="spendNew"><span class="qi">${icon('euro')}</span><span>Ausgabe</span></button>
             <a class="quick-btn" href="zuhause.html#/zuhause/tv"><span class="qi">${icon('tv')}</span><span>Fernbedienung</span></a></div>
-          <div class="row-between" style="margin-top:14px"><span class="row" style="gap:8px">${icon('drop')}<span class="small">Wasser ${fmt(d.water * 0.25, 2)} / ${fmt(s.waterGoal * 0.25, 2)} l</span></span>
+          <div class="row-between" style="margin-top:16px"><span class="row" style="gap:8px">${icon('drop')}<span class="small">Wasser ${fmt(d.water * 0.25, 2)} / ${fmt(s.waterGoal * 0.25, 2)} l</span></span>
             <div class="water">${Array.from({ length: s.waterGoal }, (_, i) => `<button class="glass glass-s${i < d.water ? ' full' : ''}" data-act="homeWater" data-n="${i + 1}" aria-label="${i + 1} Gläser"></button>`).join('')}</div></div></div>
         <div class="card span-12"><div class="card-head"><h2>${icon('chart')}Aktivität</h2><span class="muted small">letzte 26 Wochen</span></div>
           ${heatmap(26, level, tipOf)}
@@ -1197,7 +1193,7 @@ function setLabel(sets, j) {
 function renderActive() {
   const a = Active.get();
   if (!a) {
-    return `<div class="card">${emptyState('gym', 'Gerade läuft kein Training.',
+    return `<div class="card">${emptyState('gym', 'Gerade läuft kein Training',
       `<div class="row wrap" style="justify-content:center"><button class="btn btn-primary" data-act="woStartEmpty">${icon('plus')}Leeres Training</button><a class="btn" href="#/training/plaene">Aus Plan starten</a></div>`)}</div>`;
   }
   const items = a.items.map((it, i) => {
@@ -1225,7 +1221,7 @@ function renderActive() {
         <button class="icon-btn" data-act="exMenu" data-i="${i}" aria-label="Optionen für ${esc(ex.name)}">${icon('more')}</button></div>
       ${it.note ? `<p class="small muted" style="margin:-4px 0 8px">${esc(it.note)}</p>` : ''}
       <table class="sets"><thead><tr><th>Satz</th><th>Vorher</th><th>kg</th><th>Wdh.</th><th><span class="sr">Erledigt</span>${icon('check', 'ic-s')}</th><th><span class="sr">Löschen</span></th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="row" style="margin-top:6px"><button class="btn btn-s btn-ghost" data-act="setAdd" data-i="${i}">${icon('plus', 'ic-s')}Satz</button><span class="grow"></span>
+      <div class="row" style="margin-top:8px"><button class="btn btn-s btn-ghost" data-act="setAdd" data-i="${i}">${icon('plus', 'ic-s')}Satz</button><span class="grow"></span>
       <button class="btn btn-s btn-ghost" data-act="exRest" data-i="${i}">${icon('timer', 'ic-s')}Pause ${fmtDur(it.rest || Exercises.restFor(it.ex))}</button></div>
     </section>`;
   }).join('');
@@ -1234,7 +1230,7 @@ function renderActive() {
   return `<div class="wo-head"><div class="grow"><input class="wo-title" value="${esc(a.name)}" data-input="woName" aria-label="Name des Trainings">
       <div class="wo-clock"><span data-tick="wo">${fmtDur((Date.now() - a.start) / 1000)}</span> · ${done} ${done === 1 ? 'Satz' : 'Sätze'} · ${fmt(vol)} kg</div></div>
       <button class="btn btn-primary" data-act="woFinish">Beenden</button></div>
-    <div class="ex-list">${items || `<div class="card">${emptyState('gym', 'Füge deine erste Übung hinzu.')}</div>`}</div>
+    <div class="ex-list">${items || `<div class="card">${emptyState('gym', 'Füge deine erste Übung hinzu')}</div>`}</div>
     <div class="stack" style="margin-top:16px">
       <button class="btn btn-l btn-block" data-act="woAddEx">${icon('plus')}Übung hinzufügen</button>
       <button class="btn btn-ghost btn-danger" data-act="woDiscard">Training verwerfen</button></div>`;
@@ -1336,7 +1332,7 @@ function finishWorkout() {
   const best = {};
   prs.forEach(p => { if (!best[p.ex] || p.v > best[p.ex].v) best[p.ex] = p; });
   go('training/einheit/' + w.id);
-  Sheet.open(`${sheetHead('Starkes Training!', esc(w.name) + ' · ' + fmtDate(w.start, { day: true }))}
+  Sheet.open(`${sheetHead('Training gespeichert', esc(w.name) + ' · ' + fmtDate(w.start, { day: true }))}
     <div class="nutri-grid"><div><b>${fmtMin(woDuration(w))}</b><span>Dauer</span></div><div><b>${fmt(woVolume(w))}</b><span>kg Volumen</span></div>
     <div><b>${workSets(w).length}</b><span>Arbeitssätze</span></div><div><b>${Object.keys(best).length}</b><span>Rekorde</span></div></div>
     ${Object.keys(best).length ? `<div class="list">${Object.values(best).map(p => `<div class="li"><span class="badge-pr">${icon('trophy', 'ic-s')}PR</span><div class="li-main"><div class="li-title">${esc(Exercises.get(p.ex).name)}</div><div class="li-sub">${fmt(p.s.kg, 2)} kg × ${p.s.reps}</div></div><div class="li-end">${fmt(p.v, 1)} kg 1RM</div></div>`).join('')}</div>` : ''}
@@ -1360,7 +1356,7 @@ function exPickList(q) {
   Workouts.all().forEach(w => w.items.forEach(it => { counts[it.ex] = (counts[it.ex] || 0) + 1; }));
   const list = Exercises.all().filter(e => (!pickerFilter || e.m === pickerFilter) && (!q || e.name.toLowerCase().includes(q)))
     .sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0) || a.name.localeCompare(b.name, 'de'));
-  if (!list.length) return `<p class="empty">Keine Übung gefunden.</p>`;
+  if (!list.length) return `<p class="empty">Keine Übung gefunden</p>`;
   return list.map(e => `<button class="li" data-act="exPick" data-id="${e.id}"><div class="li-main"><div class="li-title">${esc(e.name)}</div><div class="li-sub">${MUSCLES[e.m]} · ${esc(e.eq)}${counts[e.id] ? ' · ' + counts[e.id] + '× trainiert' : ''}</div></div>${icon('plus', 'ic-s')}</button>`).join('');
 }
 A.exPickSearch = el => { $('#exPickList').innerHTML = exPickList(el.value); };
@@ -1392,12 +1388,12 @@ A.exOpen = el => go('training/uebung/' + encodeURIComponent(el.dataset.ex));
 /* ---------- Pläne ---------- */
 function renderPlans() {
   const list = Templates.all();
-  return `<div class="row-between" style="margin-bottom:14px"><p class="muted">Vorlagen für deine Trainingstage. Ein Tipp startet das Training.</p>
+  return `<div class="row-between" style="margin-bottom:16px"><p class="muted">Vorlagen für deine Trainingstage. Ein Tipp startet das Training.</p>
     <button class="btn" data-act="tplEdit">${icon('plus')}Neuer Plan</button></div>
     <div class="grid">${list.map(t => `<div class="card template-card span-4">
       <div class="row-between"><h2>${esc(t.name)}</h2><button class="icon-btn" data-act="tplEdit" data-id="${t.id}" aria-label="${esc(t.name)} bearbeiten">${icon('edit')}</button></div>
       <ul>${t.items.map(it => `<li>${it.sets} × ${esc(Exercises.get(it.ex).name)}${it.reps ? ` <span class="tiny">(${esc(it.reps)})</span>` : ''}</li>`).join('')}</ul>
-      <button class="btn btn-primary" data-act="woStartTpl" data-id="${t.id}">${icon('play')}Starten</button></div>`).join('') || `<div class="card span-12">${emptyState('list', 'Noch keine Pläne.')}</div>`}</div>`;
+      <button class="btn btn-primary" data-act="woStartTpl" data-id="${t.id}">${icon('play')}Starten</button></div>`).join('') || `<div class="card span-12">${emptyState('list', 'Noch keine Pläne')}</div>`}</div>`;
 }
 let tplDraft = null;
 A.tplEdit = el => {
@@ -1442,9 +1438,9 @@ function renderExercises() {
   }));
   const list = Exercises.all().filter(e => !exListFilter || e.m === exListFilter)
     .sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0) || a.name.localeCompare(b.name, 'de'));
-  return `<div class="row-between wrap" style="margin-bottom:14px"><div class="chips">${['', ...Object.keys(MUSCLES)].map(m => `<button class="chip chip-btn${m === exListFilter ? ' active' : ''}" data-act="exListMuscle" data-m="${m}">${m ? MUSCLES[m] : 'Alle'}</button>`).join('')}</div>
+  return `<div class="row-between wrap" style="margin-bottom:16px"><div class="chips">${['', ...Object.keys(MUSCLES)].map(m => `<button class="chip chip-btn${m === exListFilter ? ' active' : ''}" data-act="exListMuscle" data-m="${m}">${m ? MUSCLES[m] : 'Alle'}</button>`).join('')}</div>
     <button class="btn" data-act="exNewFromList">${icon('plus')}Eigene Übung</button></div>
-    <div class="card" style="padding:6px 16px"><div class="list">${list.map(e => `<a class="li" href="#/training/uebung/${encodeURIComponent(e.id)}">
+    <div class="card" style="padding:8px 16px"><div class="list">${list.map(e => `<a class="li" href="#/training/uebung/${encodeURIComponent(e.id)}">
       <div class="li-main"><div class="li-title">${esc(e.name)}</div><div class="li-sub">${MUSCLES[e.m]} · ${esc(e.eq)}${e.custom ? ' · eigene' : ''}</div></div>
       <div class="li-end">${counts[e.id] ? `${fmt(best[e.id] || 0, 1)} kg<div class="li-sub">${counts[e.id]}× trainiert</div>` : '<span class="muted small">neu</span>'}</div></a>`).join('')}</div></div>`;
 }
@@ -1458,7 +1454,7 @@ function renderExerciseDetail(id) {
   const best = h.reduce((b, x) => x.e1rm > (b ? b.e1rm : 0) ? x : b, null);
   const topSet = h.reduce((b, x) => (!b || x.topKg > b.topKg) ? x : b, null);
   const pts = h.map(x => ({ x: x.date, y: bw ? x.topReps : Math.round(x.e1rm * 10) / 10, tip: `<b>${bw ? x.topReps + ' Wdh.' : fmt(x.e1rm, 1) + ' kg 1RM'}</b><br>${fmt(x.best.kg, 2)} kg × ${x.best.reps} · ${esc(fmtDate(x.date, { plain: true, day: true }))}` }));
-  return `<a class="btn btn-ghost btn-s" href="#/training/uebungen" style="margin-bottom:10px">${icon('left', 'ic-s')}Alle Übungen</a>
+  return `<a class="btn btn-ghost btn-s" href="#/training/uebungen" style="margin-bottom:12px">${icon('left', 'ic-s')}Alle Übungen</a>
     ${pageHead(esc(ex.name), `${MUSCLES[ex.m]} · ${esc(ex.eq)}`, ex.custom ? `<button class="btn btn-danger" data-act="exDelete" data-id="${ex.id}">${icon('trash')}Löschen</button>` : '')}
     <div class="kpis">
       <div class="card"><div class="stat-label">${bw ? 'Meiste Wdh.' : 'Geschätztes 1RM'}</div><div class="stat-value">${best ? (bw ? Math.max(...h.map(x => x.topReps)) : fmt(best.e1rm, 1)) : '–'}${best && !bw ? '<small>kg</small>' : ''}</div><div class="stat-foot">${best && !bw ? fmtDate(best.date) : ''}</div></div>
@@ -1468,21 +1464,21 @@ function renderExerciseDetail(id) {
     <div class="grid"><div class="card span-7"><div class="card-head"><h2>${icon('chart')}${bw ? 'Beste Wiederholungen' : 'Geschätztes 1RM'}</h2><span class="muted small">Epley-Formel</span></div>
       ${Charts.slot({ type: 'line', points: pts, label: 'Kraftverlauf ' + ex.name, yFmt: v => fmt(v, 1), empty: 'Trainiere die Übung, dann erscheint hier dein Verlauf.' })}</div>
       <div class="card span-5"><div class="card-head"><h2>${icon('list')}Verlauf</h2></div><div class="list">${h.slice().reverse().slice(0, 12).map(x => `<a class="li" href="#/training/einheit/${x.w.id}"><div class="li-main"><div class="li-title">${fmtDate(x.date, { day: true })}</div>
-        <div class="li-sub">${x.sets.map(s => (s.type === 'w' ? 'A ' : '') + fmt(s.kg, 2) + '×' + s.reps).join(' · ')}</div></div><div class="li-end">${bw ? x.topReps + ' Wdh.' : fmt(x.e1rm, 1) + ' kg'}</div></a>`).join('') || '<p class="muted">Noch nicht trainiert.</p>'}</div></div></div>`;
+        <div class="li-sub">${x.sets.map(s => (s.type === 'w' ? 'A ' : '') + fmt(s.kg, 2) + '×' + s.reps).join(' · ')}</div></div><div class="li-end">${bw ? x.topReps + ' Wdh.' : fmt(x.e1rm, 1) + ' kg'}</div></a>`).join('') || '<p class="muted">Noch nicht trainiert</p>'}</div></div></div>`;
 }
 A.exDelete = el => confirmSheet('Übung löschen?', 'Gespeicherte Sätze bleiben in deinen Trainings erhalten.', 'Löschen', () => { Exercises.remove(el.dataset.id); go('training/uebungen'); }, true);
 
 /* ---------- Verlauf ---------- */
 function renderHistory() {
   const ws = Workouts.all();
-  if (!ws.length) return `<div class="card">${emptyState('calendar', 'Noch keine Trainings gespeichert.', `<button class="btn btn-primary" data-act="woStartEmpty">Training starten</button>`)}</div>`;
+  if (!ws.length) return `<div class="card">${emptyState('calendar', 'Noch keine Trainings gespeichert', `<button class="btn btn-primary" data-act="woStartEmpty">Training starten</button>`)}</div>`;
   const prs = prEvents();
   const groups = {};
   ws.forEach(w => { const k = monthOf(dkey(w.start)); (groups[k] = groups[k] || []).push(w); });
   return Object.keys(groups).sort().reverse().map(k => {
     const [y, m] = k.split('-').map(Number);
-    return `<h2 style="margin:18px 4px 10px">${MONTHS_LONG[m - 1]} ${y} <span class="muted small">· ${groups[k].length} Trainings</span></h2>
-    <div class="card" style="padding:6px 16px"><div class="list">${groups[k].map(w => {
+    return `<h2 style="margin:20px 4px 12px">${MONTHS_LONG[m - 1]} ${y} <span class="muted small">· ${groups[k].length} Trainings</span></h2>
+    <div class="card" style="padding:8px 16px"><div class="list">${groups[k].map(w => {
       const pc = new Set(prs.filter(p => p.w === w.id).map(p => p.ex)).size;
       return `<a class="li" href="#/training/einheit/${w.id}"><div class="li-main"><div class="li-title">${esc(w.name)} ${pc ? `<span class="badge-pr">${icon('trophy', 'ic-s')}${pc}</span>` : ''}</div>
         <div class="li-sub">${fmtDate(w.start, { day: true })} · ${fmtMin(woDuration(w))} · ${w.items.length} Übungen</div></div><div class="li-end">${fmt(woVolume(w))} kg</div></a>`;
@@ -1491,9 +1487,9 @@ function renderHistory() {
 }
 function renderWorkoutDetail(id) {
   const w = Workouts.get(id);
-  if (!w) return `<div class="card">${emptyState('calendar', 'Training nicht gefunden.')}</div>`;
+  if (!w) return `<div class="card">${emptyState('calendar', 'Training nicht gefunden')}</div>`;
   const prs = prEvents().filter(p => p.w === w.id);
-  return `<a class="btn btn-ghost btn-s" href="#/training/verlauf" style="margin-bottom:10px">${icon('left', 'ic-s')}Verlauf</a>
+  return `<a class="btn btn-ghost btn-s" href="#/training/verlauf" style="margin-bottom:12px">${icon('left', 'ic-s')}Verlauf</a>
     ${pageHead(esc(w.name), `${fmtDate(w.start, { day: true, plain: true })} · ${fmtTime(w.start)}–${fmtTime(w.end)} Uhr`,
       `<button class="btn" data-act="woRepeat" data-id="${w.id}">${icon('play')}Wiederholen</button><button class="btn" data-act="tplFromWorkout" data-id="${w.id}">Als Plan</button><button class="icon-btn bordered" data-act="woDelete" data-id="${w.id}" aria-label="Training löschen">${icon('trash')}</button>`)}
     <div class="kpis"><div class="card"><div class="stat-label">Dauer</div><div class="stat-value">${fmtMin(woDuration(w))}</div></div>
@@ -1572,30 +1568,30 @@ function renderTrainingDash() {
   </div>
   <div class="kpis">
     <div class="card"><div class="stat-label">Diese Woche</div><div class="stat-value">${thisWeek.length}<small>/ ${s.weekGoal}</small></div>
-      <div class="week-dots" style="margin-top:10px">${days.map(d => `<div class="${d.k === t ? 'today' : ''}"><i class="${d.on ? 'on' : ''}" title="${fmtDate(d.k, { plain: true, day: true })}">${d.on ? icon('check', 'ic-s') : ''}</i>${DAYS[parseKey(d.k).getDay()]}</div>`).join('')}</div></div>
+      <div class="week-dots" style="margin-top:12px">${days.map(d => `<div class="${d.k === t ? 'today' : ''}"><i class="${d.on ? 'on' : ''}" title="${fmtDate(d.k, { plain: true, day: true })}">${d.on ? icon('check', 'ic-s') : ''}</i>${DAYS[parseKey(d.k).getDay()]}</div>`).join('')}</div></div>
     <div class="card"><div class="stat-label">Volumen · 7 Tage</div><div class="stat-value">${fmt(vol7 / 1000, 1)}<small>t</small></div>
-      <div class="stat-foot">${volPrev ? `<span class="${delta >= 0 ? 'delta-up' : 'delta-down'}">${delta >= 0 ? '▲' : '▼'} ${fmt(Math.abs(delta))} %</span> zur Vorwoche` : 'Vorwoche ohne Training'}</div></div>
+      <div class="stat-foot">${volPrev ? `<span class="${delta >= 0 ? 'delta-up' : 'delta-down'}">${delta >= 0 ? '+' : '−'}${fmt(Math.abs(delta))} %</span> zur Vorwoche` : 'Vorwoche ohne Training'}</div></div>
     <div class="card"><div class="stat-label">Wochenserie</div><div class="stat-value">${streak}<small>${streak === 1 ? 'Woche' : 'Wochen'}</small></div><div class="stat-foot">mit ≥ ${s.weekGoal} Trainings</div></div>
     <div class="card"><div class="stat-label">Rekorde · 30 Tage</div><div class="stat-value">${prEx30}</div><div class="stat-foot">${fmtMin(sum(last7.map(woDuration)))} Training in 7 Tagen</div></div>
   </div>
   <div class="grid">
     <div class="card span-8"><div class="card-head wrap"><h2>${icon('chart')}Kraftverlauf</h2>
-      <div class="row wrap">${exIds.length ? `<select class="input" style="min-height:34px;padding:4px 10px;font-size:14px;width:auto;max-width:240px" data-change="kvEx" aria-label="Übung wählen">${exIds.map(id => `<option value="${id}"${id === kv.ex ? ' selected' : ''}>${esc(Exercises.get(id).name)}</option>`).join('')}</select>` : ''}</div></div>
-      <div class="row-between wrap" style="margin-bottom:10px">
+      <div class="row wrap">${exIds.length ? `<select class="input" style="min-height:36px;padding:4px 12px;font-size:14px;width:auto;max-width:240px" data-change="kvEx" aria-label="Übung wählen">${exIds.map(id => `<option value="${id}"${id === kv.ex ? ' selected' : ''}>${esc(Exercises.get(id).name)}</option>`).join('')}</select>` : ''}</div></div>
+      <div class="row-between wrap" style="margin-bottom:12px">
         <div class="seg" role="group" aria-label="Kennzahl">${bw ? '<button class="active">Wiederholungen</button>' : [['e1rm', '1RM'], ['top', 'Gewicht'], ['vol', 'Volumen']].map(([k, l]) => `<button class="${metric === k ? 'active' : ''}" data-act="kvMetric" data-k="${k}">${l}</button>`).join('')}</div>
         <div class="seg" role="group" aria-label="Zeitraum">${[[90, '3 M'], [180, '6 M'], [365, '1 J'], [0, 'Alles']].map(([k, l]) => `<button class="${kv.range === k ? 'active' : ''}" data-act="kvRange" data-k="${k}">${l}</button>`).join('')}</div></div>
-      ${pts.length > 1 ? `<p class="small muted" style="margin-bottom:6px">${change >= 0 ? `<span class="delta-up">+${fmt(change, 1)} %</span>` : `<span class="delta-down">${fmt(change, 1)} %</span>`} im Zeitraum · zuletzt <b style="color:var(--ink)">${fmt(last.y, 1)} ${metric === 'reps' ? 'Wdh.' : 'kg'}</b></p>` : ''}
+      ${pts.length > 1 ? `<p class="small muted" style="margin-bottom:8px">${change >= 0 ? `<span class="delta-up">+${fmt(change, 1)} %</span>` : `<span class="delta-down">${fmt(change, 1)} %</span>`} im Zeitraum · zuletzt <b style="color:var(--ink)">${fmt(last.y, 1)} ${metric === 'reps' ? 'Wdh.' : 'kg'}</b></p>` : ''}
       ${Charts.slot({ type: 'line', points: pts, label: 'Kraftverlauf', height: 240, yFmt: v => fmt(v, metric === 'vol' ? 0 : 1), empty: exIds.length ? 'Zu wenig Daten im Zeitraum' : 'Nach deinem ersten Training siehst du hier, wie du stärker wirst.' })}</div>
     <div class="card span-4"><div class="card-head"><h2>${icon('gym')}Sätze je Muskel</h2>
       <div class="seg">${[[7, '7 T'], [30, '30 T']].map(([k, l]) => `<button class="${muscleRange.d === k ? 'active' : ''}" data-act="muscleRange" data-k="${k}">${l}</button>`).join('')}</div></div>
-      ${(() => { const m = muscleSets(muscleRange.d); return m.length ? hbars(m, v => fmt(v)) : '<p class="empty">Noch keine Sätze im Zeitraum.</p>'; })()}
+      ${(() => { const m = muscleSets(muscleRange.d); return m.length ? hbars(m, v => fmt(v)) : '<p class="empty">Noch keine Sätze im Zeitraum</p>'; })()}
       <p class="tiny muted" style="margin-top:12px">Arbeitssätze ohne Aufwärmen. Richtwert für Muskelaufbau: 10–20 Sätze je Muskel und Woche.</p></div>
-    <div class="card span-6"><div class="card-head"><h2>${icon('calendar')}Trainings pro Woche</h2><span class="muted small">Ziel ${s.weekGoal}</span></div>
+    <div class="card span-7"><div class="card-head"><h2>${icon('calendar')}Trainings pro Woche</h2><span class="muted small">Ziel ${s.weekGoal}</span></div>
       ${Charts.slot({ type: 'bars', bars: weeks, goal: s.weekGoal, goalLabel: 'Ziel', height: 200, label: 'Trainings pro Woche', empty: 'Noch keine Trainings' })}</div>
-    <div class="card span-6"><div class="card-head"><h2>${icon('trophy')}Bestleistungen</h2><a class="btn btn-ghost btn-s" href="#/training/uebungen">Alle</a></div>
-      <div class="list">${bests.map(x => `<a class="li" href="#/training/uebung/${encodeURIComponent(x.id)}"><div class="li-main"><div class="li-title">${esc(Exercises.get(x.id).name)}</div><div class="li-sub">${fmt(x.b.best.kg, 2)} kg × ${x.b.best.reps} · ${fmtDate(x.b.date)}</div></div><div class="li-end">${fmt(x.b.e1rm, 1)} kg</div></a>`).join('') || '<p class="empty">Hier landen deine Rekorde.</p>'}</div></div>
+    <div class="card span-5"><div class="card-head"><h2>${icon('trophy')}Bestleistungen</h2><a class="btn btn-ghost btn-s" href="#/training/uebungen">Alle</a></div>
+      <div class="list">${bests.map(x => `<a class="li" href="#/training/uebung/${encodeURIComponent(x.id)}"><div class="li-main"><div class="li-title">${esc(Exercises.get(x.id).name)}</div><div class="li-sub">${fmt(x.b.best.kg, 2)} kg × ${x.b.best.reps} · ${fmtDate(x.b.date)}</div></div><div class="li-end">${fmt(x.b.e1rm, 1)} kg</div></a>`).join('') || '<p class="empty">Hier landen deine Rekorde</p>'}</div></div>
     <div class="card span-12"><div class="card-head"><h2>${icon('list')}Letzte Trainings</h2><a class="btn btn-ghost btn-s" href="#/training/verlauf">Verlauf</a></div>
-      <div class="list">${Workouts.all().slice(0, 5).map(w => `<a class="li" href="#/training/einheit/${w.id}"><div class="li-main"><div class="li-title">${esc(w.name)}</div><div class="li-sub">${fmtDate(w.start, { day: true })} · ${fmtMin(woDuration(w))} · ${w.items.map(it => Exercises.get(it.ex).name.split(' (')[0]).slice(0, 4).join(', ')}</div></div><div class="li-end">${fmt(woVolume(w))} kg</div></a>`).join('') || '<p class="empty">Noch keine Trainings.</p>'}</div></div>
+      <div class="list">${Workouts.all().slice(0, 5).map(w => `<a class="li" href="#/training/einheit/${w.id}"><div class="li-main"><div class="li-title">${esc(w.name)}</div><div class="li-sub">${fmtDate(w.start, { day: true })} · ${fmtMin(woDuration(w))} · ${w.items.map(it => Exercises.get(it.ex).name.split(' (')[0]).slice(0, 4).join(', ')}</div></div><div class="li-end">${fmt(woVolume(w))} kg</div></a>`).join('') || '<p class="empty">Noch keine Trainings</p>'}</div></div>
   </div>`;
 }
 A.kvEx = el => { kv.ex = el.value; Local.set('kv', kv); rerender(); };
@@ -1617,7 +1613,7 @@ function renderTools() {
         <circle id="restRing" cx="50" cy="50" r="44" fill="none" stroke="var(--accent-mark)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - r / tot)).toFixed(1)}"/></svg>
         <div class="big-time" id="restBig">${fmtDur(Math.ceil(r))}</div></div>
       <div class="preset-row" style="margin-top:16px">${[30, 60, 90, 120, 180, 300].map(sec => `<button class="chip chip-btn" data-act="restStart" data-sec="${sec}">${fmtDur(sec)}</button>`).join('')}</div>
-      <div class="row" style="justify-content:center;margin-top:10px"><button class="btn btn-s" data-act="timerAdd" data-sec="-15">−15 s</button><button class="btn btn-s" data-act="timerAdd" data-sec="15">+15 s</button>
+      <div class="row" style="justify-content:center;margin-top:12px"><button class="btn btn-s" data-act="timerAdd" data-sec="-15">−15 s</button><button class="btn btn-s" data-act="timerAdd" data-sec="15">+15 s</button>
       ${'Notification' in window && Notification.permission === 'default' ? `<button class="btn btn-s btn-ghost" data-act="notifAsk">Mitteilungen erlauben</button>` : ''}</div></div>
     <div class="card span-6"><div class="card-head"><h2>${icon('timer')}Stoppuhr</h2></div>
       <div class="big-time" data-tick="sw" style="margin:24px 0">${fmtSw(swElapsed())}</div>
@@ -1629,7 +1625,7 @@ function renderTools() {
       ${IV.phase ? `<div class="live"><p class="stat-label" data-tick="ivPhase">${IV.phase === 'work' ? 'Belastung' : IV.phase === 'rest' ? 'Pause' : 'Gleich geht’s los'}</p>
         <div class="big-time" data-tick="iv" style="margin:12px 0">${fmtDur(Math.ceil(Math.max(0, IV.end - Date.now()) / 1000))}</div>
         <p class="muted" data-tick="ivRound">Runde ${Math.max(1, IV.round)} von ${IV.rounds}</p>
-        <button class="btn btn-l" style="margin-top:14px" data-act="ivStop">${icon('stop')}Stopp</button></div>` :
+        <button class="btn btn-l" style="margin-top:16px" data-act="ivStop">${icon('stop')}Stopp</button></div>` :
       `<div class="fields"><label class="field">Belastung (s)<input class="input" inputmode="numeric" id="ivWork" value="${IV.work}"></label>
         <label class="field">Pause (s)<input class="input" inputmode="numeric" id="ivRest" value="${IV.rest}"></label>
         <label class="field">Runden<input class="input" inputmode="numeric" id="ivRounds" value="${IV.rounds}"></label></div>
@@ -1647,7 +1643,7 @@ function renderTools() {
 }
 function ormTable(kg, reps) {
   const m = e1rm(kg, reps);
-  if (!m) return '<p class="muted">Gewicht und Wiederholungen eingeben.</p>';
+  if (!m) return '<p class="muted">Gewicht und Wiederholungen eingeben</p>';
   const rows = [[100, 1], [95, 2], [93, 3], [90, 4], [87, 5], [85, 6], [80, 8], [75, 10], [70, 12], [65, 15]];
   return `<p style="margin-bottom:8px">Geschätztes 1RM: <b style="font-size:22px">${fmt(m, 1)} kg</b></p>
     <table class="ntable"><thead><tr><th>% vom 1RM</th><th>Gewicht</th><th>≈ Wdh.</th></tr></thead><tbody>${rows.map(([p, r]) => `<tr><td>${p} %</td><td>${fmt(Math.round(m * p / 100 / 1.25) * 1.25, 2)} kg</td><td>${r}</td></tr>`).join('')}</tbody></table>`;
@@ -1689,7 +1685,7 @@ function ivTick() {
   if (IV.phase === 'prep' || IV.phase === 'rest') {
     IV.round++; IV.phase = 'work'; IV.end = Date.now() + IV.work * 1000; Beep.play(2, 1175); Beep.buzz([300]);
   } else if (IV.phase === 'work') {
-    if (IV.round >= IV.rounds) { clearInterval(IV.iv); IV.phase = null; Beep.play(4); Beep.buzz(); toast('Intervalle geschafft!'); rerender(); return; }
+    if (IV.round >= IV.rounds) { clearInterval(IV.iv); IV.phase = null; Beep.play(4); Beep.buzz(); toast('Intervalle fertig'); rerender(); return; }
     if (IV.rest) { IV.phase = 'rest'; IV.end = Date.now() + IV.rest * 1000; Beep.play(1, 660); Beep.buzz([120]); }
     else { IV.round++; IV.end = Date.now() + IV.work * 1000; Beep.play(2, 1175); }
   }
@@ -1740,7 +1736,7 @@ function calorieSummary(k, compact) {
         <div class="result"><b>${fmt(left)}</b><span>Übrig</span></div></div>
       ${MACROS.map(([n, label, goalKey, col]) => {
         const g = s[goalKey], v = t[n];
-        return `<div class="macro"><div class="macro-head"><span class="row" style="gap:6px"><span class="dot" style="background:${col}"></span>${label}</span><span class="num"><b>${fmt(v)}</b> / ${fmt(g)} g</span></div>
+        return `<div class="macro"><div class="macro-head"><span class="row" style="gap:8px"><span class="dot" style="background:${col}"></span>${label}</span><span class="num"><b>${fmt(v)}</b> / ${fmt(g)} g</span></div>
           <div class="bar${v > g * 1.1 ? ' over' : ''}"><span style="width:${clamp(v / g * 100, 0, 100)}%;background:${col}"></span></div></div>`;
       }).join('')}
     </div></div>` };
@@ -1837,13 +1833,13 @@ function foodResults() {
   if (!q) {
     const rec = Foods.recent().slice(0, 15), own = Foods.lib().custom;
     return (rec.length ? `<p class="stat-label" style="margin:8px 4px">Zuletzt verwendet</p>${rec.map(foodRow).join('')}` : '') +
-      (own.length ? `<p class="stat-label" style="margin:14px 4px 8px">Meine Lebensmittel</p>${own.map(foodRow).join('')}` : '') +
-      (!rec.length && !own.length ? `<p class="empty">Tippe los, z. B. „Haferflocken“. Mit „Online“ suchst du in über 3 Mio. Produkten.</p>` : '');
+      (own.length ? `<p class="stat-label" style="margin:16px 4px 8px">Meine Lebensmittel</p>${own.map(foodRow).join('')}` : '') +
+      (!rec.length && !own.length ? `<p class="empty">Tippe einen Namen, z. B. Haferflocken. „Online“ sucht zusätzlich in Open Food Facts.</p>` : '');
   }
   const local = Foods.search(q);
   const online = add.online.filter(o => !local.some(l => l.id === o.id));
   return local.map(foodRow).join('') +
-    (add.loading ? `<p class="empty">Suche bei Open Food Facts …</p>` : online.length ? `<p class="stat-label" style="margin:14px 4px 8px">Open Food Facts</p>${online.map(foodRow).join('')}` : '') +
+    (add.loading ? `<p class="empty">Suche bei Open Food Facts …</p>` : online.length ? `<p class="stat-label" style="margin:16px 4px 8px">Open Food Facts</p>${online.map(foodRow).join('')}` : '') +
     (!local.length && !online.length && !add.loading ? `<p class="empty">Nichts gefunden. Drück Enter für die Online-Suche oder leg es unter „Neu anlegen“ an.</p>` : '');
 }
 A.foodSearch = el => {
@@ -2017,9 +2013,9 @@ function renderNutrients() {
         return `<tr><td>${l}</td><td>${fmt(t[k], k === 'kcal' ? 0 : 1)} ${u}</td><td>${fmt(goals[k])} ${u}</td><td style="color:${left < 0 && (limit || k === 'kcal') ? 'var(--bad)' : 'inherit'}">${fmt(left, k === 'kcal' ? 0 : 1)}</td></tr>`;
       }).join('')}</tbody></table></div>
     <div class="card span-5"><div class="card-head"><h2>${icon('chart')}Makro-Verteilung</h2></div>
-      <p class="stat-label" style="margin-bottom:6px">Gegessen</p>${split(kc, tot)}
-      <p class="stat-label" style="margin:16px 0 6px">Ziel</p>${split(gk, gt)}
-      <div class="list" style="margin-top:14px">${MACROS.map(([n, l, , col]) => `<div class="li"><span class="dot" style="background:${col}"></span><span class="li-main">${l}</span><span class="li-end">${fmt(tot ? kc[n] / tot * 100 : 0)} % <span class="muted small">/ Ziel ${fmt(kc && gt ? gk[n] / gt * 100 : 0)} %</span></span></div>`).join('')}</div></div></div>`;
+      <p class="stat-label" style="margin-bottom:8px">Gegessen</p>${split(kc, tot)}
+      <p class="stat-label" style="margin:16px 0 8px">Ziel</p>${split(gk, gt)}
+      <div class="list" style="margin-top:16px">${MACROS.map(([n, l, , col]) => `<div class="li"><span class="dot" style="background:${col}"></span><span class="li-main">${l}</span><span class="li-end">${fmt(tot ? kc[n] / tot * 100 : 0)} % <span class="muted small">/ Ziel ${fmt(kc && gt ? gk[n] / gt * 100 : 0)} %</span></span></div>`).join('')}</div></div></div>`;
 }
 let weekSpan = 7;
 function renderWeek() {
@@ -2060,7 +2056,7 @@ function renderProgress() {
       <div class="row-between"><span class="muted">BMI</span><b class="num">${bmi ? fmt(bmi, 1) : '–'}</b></div></div></div>
     <div class="card span-8"><div class="card-head wrap"><h2>${icon('chart')}Gewichtsverlauf</h2><div class="seg">${[[30, '30 T'], [90, '3 M'], [365, '1 J'], [0, 'Alles']].map(([k, l]) => `<button class="${weightRange === k ? 'active' : ''}" data-act="weightRange" data-k="${k}">${l}</button>`).join('')}</div></div>
       ${Charts.slot({ type: 'line', points: pts, height: 260, label: 'Gewichtsverlauf', yFmt: v => fmt(v, 1), empty: 'Trag dein Gewicht ein, um den Verlauf zu sehen.' })}</div>
-    <div class="card span-12"><div class="card-head"><h2>${icon('list')}Einträge</h2></div><div class="list">${all.slice().reverse().slice(0, 14).map(x => `<div class="li"><span class="li-main">${fmtDate(x.d, { day: true })}</span><span class="li-end">${fmt(x.kg, 1)} kg</span><button class="set-del" data-act="weightDel" data-d="${x.d}" aria-label="Eintrag löschen">${icon('x', 'ic-s')}</button></div>`).join('') || '<p class="empty">Noch keine Einträge.</p>'}</div></div></div>`;
+    <div class="card span-12"><div class="card-head"><h2>${icon('list')}Einträge</h2></div><div class="list">${all.slice().reverse().slice(0, 14).map(x => `<div class="li"><span class="li-main">${fmtDate(x.d, { day: true })}</span><span class="li-end">${fmt(x.kg, 1)} kg</span><button class="set-del" data-act="weightDel" data-d="${x.d}" aria-label="Eintrag löschen">${icon('x', 'ic-s')}</button></div>`).join('') || '<p class="empty">Noch keine Einträge</p>'}</div></div></div>`;
 }
 A.weightSave = f => { const d = formData(f); const kg = num(d.kg); if (!(kg > 20 && kg < 400)) return toast('Bitte ein gültiges Gewicht eingeben'); Body.set(d.d || todayKey(), Math.round(kg * 10) / 10); toast('Gewicht gespeichert'); rerender(); };
 A.weightDel = el => { Body.set(el.dataset.d, 0); rerender(); };
@@ -2408,7 +2404,6 @@ function renderRunDash() {
       <div class="card"><div class="stat-label">Diese Woche</div><div class="stat-value">${fmt(km(week), 1)}<small>km</small></div><div class="stat-foot">${week.length} ${week.length === 1 ? 'Lauf' : 'Läufe'}</div></div>
       <div class="card"><div class="stat-label">${MONTHS_LONG[new Date().getMonth()]}</div><div class="stat-value">${fmt(km(month), 1)}<small>km</small></div><div class="stat-foot">${fmtMin(sum(month.map(r => r.sec)))} unterwegs</div></div>
       <div class="card"><div class="stat-label">Jahr ${new Date().getFullYear()}</div><div class="stat-value">${fmt(yearKm)}<small>/ ${fmt(s.runYearGoal)} km</small></div>
-        <div class="bar" style="margin-top:10px"><span style="width:${clamp(yearKm / s.runYearGoal * 100, 0, 100)}%"></span></div>
         <div class="stat-foot">${yearKm >= onTrack ? `<span class="delta-up">${fmt(yearKm - onTrack)} km voraus</span>` : `${fmt(onTrack - yearKm)} km hinter Plan`}</div></div>
       <div class="card"><div class="stat-label">Ø Pace · 30 Tage</div><div class="stat-value">${fmtPace(avgPace)}<small>/km</small></div><div class="stat-foot">${fmt(km(r30), 1)} km in ${r30.length} Läufen</div></div></div>
     <div class="grid">
@@ -2421,7 +2416,7 @@ function renderRunDash() {
       <div class="card span-7"><div class="card-head"><h2>${icon('run')}Pace-Verlauf</h2><span class="muted small">oben = schneller</span></div>
         ${Charts.slot({ type: 'line', points: pacePts, invert: true, height: 220, yFmt: v => fmtPace(v), label: 'Pace-Verlauf', empty: 'Läufe ab 2 km erscheinen hier' })}</div>
       <div class="card span-5"><div class="card-head"><h2>${icon('list')}Letzte Läufe</h2><a class="btn btn-ghost btn-s" href="#/laufen/verlauf">Alle</a></div>
-        <div class="list">${Runs.all().slice(0, 5).map(runRow).join('') || '<p class="empty">Noch keine Läufe.</p>'}</div></div>
+        <div class="list">${Runs.all().slice(0, 5).map(runRow).join('') || '<p class="empty">Noch keine Läufe</p>'}</div></div>
     </div>`;
 }
 function runRow(r) {
@@ -2464,28 +2459,28 @@ A.runDelete = el => confirmSheet('Lauf löschen?', 'Der Lauf wird endgültig ent
 
 function renderRunDetail(id) {
   const r = Runs.get(id);
-  if (!r) return `<div class="card">${emptyState('run', 'Lauf nicht gefunden.')}</div>`;
+  if (!r) return `<div class="card">${emptyState('run', 'Lauf nicht gefunden')}</div>`;
   const splits = r.splits || [];
-  return `<a class="btn btn-ghost btn-s" href="#/laufen/verlauf" style="margin-bottom:10px">${icon('left', 'ic-s')}Alle Läufe</a>
+  return `<a class="btn btn-ghost btn-s" href="#/laufen/verlauf" style="margin-bottom:12px">${icon('left', 'ic-s')}Alle Läufe</a>
     ${pageHead(`${fmt(r.km, 2)} km ${esc(r.type || '')}`, `${fmtDate(r.start, { day: true, plain: true })} · ${fmtTime(r.start)} Uhr`, `<a class="btn" href="#/laufen/eintragen/${r.id}">${icon('edit')}Bearbeiten</a>`)}
     <div class="kpis"><div class="card"><div class="stat-label">Zeit</div><div class="stat-value">${fmtDur(r.sec)}</div></div>
       <div class="card"><div class="stat-label">Pace</div><div class="stat-value">${fmtPace(r.sec / r.km)}<small>/km</small></div></div>
       <div class="card"><div class="stat-label">Tempo</div><div class="stat-value">${fmt(r.km / (r.sec / 3600), 1)}<small>km/h</small></div></div>
       <div class="card"><div class="stat-label">${r.hr ? 'Ø Puls' : 'Gefühl'}</div><div class="stat-value">${r.hr ? r.hr + '<small>bpm</small>' : ['–', 'Zäh', 'Okay', 'Gut', 'Stark', 'Fliegend'][r.feel || 0]}</div></div></div>
-    <div class="grid">${r.route && r.route.length > 1 ? `<div class="card span-7"><div class="card-head"><h2>${icon('pin')}Strecke</h2><span class="muted small">Start ● Ziel</span></div>${routeSvg(r.route, 'route', 600, 300)}</div>` : ''}
+    <div class="grid">${r.route && r.route.length > 1 ? `<div class="card span-7"><div class="card-head"><h2>${icon('pin')}Strecke</h2><span class="legend small"><span><i class="dot" style="background:var(--accent-mark)"></i>Start</span><span><i class="dot" style="background:var(--ink)"></i>Ziel</span></span></div>${routeSvg(r.route, 'route', 600, 300)}</div>` : ''}
       <div class="card ${r.route && r.route.length > 1 ? 'span-5' : 'span-12'}"><div class="card-head"><h2>${icon('list')}${splits.length ? 'Kilometerzeiten' : 'Notiz'}</h2></div>
       ${splits.length ? `<table class="ntable"><thead><tr><th>km</th><th>Zeit</th><th>Pace</th></tr></thead><tbody>${splits.map((s, i) => `<tr><td>${i + 1}</td><td>${fmtDur(splits.slice(0, i + 1).reduce((a, b) => a + b, 0))}</td><td>${fmtPace(s)}</td></tr>`).join('')}</tbody></table>` : ''}
-      ${r.note ? `<p style="margin-top:10px">${esc(r.note)}</p>` : splits.length ? '' : '<p class="muted">Keine Notiz.</p>'}</div></div>`;
+      ${r.note ? `<p style="margin-top:12px">${esc(r.note)}</p>` : splits.length ? '' : '<p class="muted">Keine Notiz</p>'}</div></div>`;
 }
 function renderRunHistory() {
   const rs = Runs.all();
-  if (!rs.length) return `<div class="card">${emptyState('run', 'Noch keine Läufe.', `<a class="btn btn-primary" href="#/laufen/eintragen">Lauf eintragen</a>`)}</div>`;
+  if (!rs.length) return `<div class="card">${emptyState('run', 'Noch keine Läufe', `<a class="btn btn-primary" href="#/laufen/eintragen">Lauf eintragen</a>`)}</div>`;
   const groups = {};
   rs.forEach(r => { const k = monthOf(dkey(r.start)); (groups[k] = groups[k] || []).push(r); });
   return Object.keys(groups).sort().reverse().map(k => {
     const [y, m] = k.split('-').map(Number), g = groups[k];
-    return `<h2 style="margin:18px 4px 10px">${MONTHS_LONG[m - 1]} ${y} <span class="muted small">· ${fmt(sum(g.map(r => r.km)), 1)} km</span></h2>
-      <div class="card" style="padding:6px 16px"><div class="list">${g.map(runRow).join('')}</div></div>`;
+    return `<h2 style="margin:20px 4px 12px">${MONTHS_LONG[m - 1]} ${y} <span class="muted small">· ${fmt(sum(g.map(r => r.km)), 1)} km</span></h2>
+      <div class="card" style="padding:8px 16px"><div class="list">${g.map(runRow).join('')}</div></div>`;
   }).join('');
 }
 
@@ -2506,7 +2501,7 @@ function renderRunCalc() {
       <table class="ntable"><thead><tr><th>Pace</th><th>km/h</th>${RACES.map(r => `<th>${r[1]}</th>`).join('')}</tr></thead><tbody>${paces.map(p => `<tr><td>${fmtPace(p)} /km</td><td>${fmt(3600 / p, 1)}</td>${RACES.map(([d]) => `<td>${fmtDur(p * d)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div></div>`;
 }
 function riegelTable(km, sec) {
-  if (!(km > 0 && sec > 0)) return '<p class="muted">Distanz und Zeit eintragen.</p>';
+  if (!(km > 0 && sec > 0)) return '<p class="muted">Distanz und Zeit eintragen</p>';
   return `<div class="list">${RACES.map(([d, l]) => { const p = riegel(sec, km, d); return `<div class="li"><span class="li-main">${l}</span><span class="li-end">${fmtDur(p)} <span class="muted small">${fmtPace(p / d)} /km</span></span></div>`; }).join('')}</div>`;
 }
 A.riegelCalc = () => { $('#rgOut').innerHTML = riegelTable(num($('#rgKm').value), parseDur($('#rgTime').value)); };
@@ -2620,8 +2615,8 @@ function renderLive() {
       <p class="small muted" style="margin-top:12px">${secure ? 'Der Bildschirm bleibt während des Laufs an. Jeder Kilometer wird mit einem Ton angesagt.' : 'Hinweis: GPS funktioniert nur, wenn die Seite über https oder localhost geöffnet ist.'}</p>` :
       `<div class="row" style="justify-content:center">${s.status === 'running' ? `<button class="btn btn-l" data-act="livePause">${icon('pause')}Pause</button>` : `<button class="btn btn-l btn-primary" data-act="liveResume">${icon('play')}Weiter</button>`}
         <button class="btn btn-l" data-act="liveStop">${icon('stop')}Beenden</button></div>
-        <button class="btn btn-ghost btn-danger btn-s" style="margin-top:10px" data-act="liveDiscard">Verwerfen</button>`}
-    <div class="list" id="liveSplits" style="margin-top:14px;text-align:left"></div></div>`;
+        <button class="btn btn-ghost btn-danger btn-s" style="margin-top:12px" data-act="liveDiscard">Verwerfen</button>`}
+    <div class="list" id="liveSplits" style="margin-top:16px;text-align:left"></div></div>`;
 }
 
 V.laufen = {
@@ -2696,8 +2691,8 @@ function paintHa() {
   if (HA.err) { el.innerHTML = `<p class="muted">${esc(HA.err)}</p><a class="btn" style="margin-top:12px" href="#/einstellungen">Einstellungen prüfen</a>`; return; }
   el.innerHTML = HA_DOMAINS.map(([dom, label]) => {
     const list = HA.states.filter(s => s.entity_id.startsWith(dom + '.'));
-    return list.length ? `<h3 style="margin:16px 0 10px">${label}</h3><div class="devices">${list.map(haTile).join('')}</div>` : '';
-  }).join('') || '<p class="muted">Keine passenden Geräte gefunden.</p>';
+    return list.length ? `<h3 style="margin:16px 0 12px">${label}</h3><div class="devices">${list.map(haTile).join('')}</div>` : '';
+  }).join('') || '<p class="muted">Keine passenden Geräte gefunden</p>';
 }
 A.haCall = el => HA.call(el.dataset.d, el.dataset.s, { entity_id: el.dataset.e });
 A.haTemp = el => HA.call('climate', 'set_temperature', { entity_id: el.dataset.e, temperature: +el.dataset.t });
@@ -2712,10 +2707,10 @@ const PLANNED_ROOMS = [
 function tvBlock(full) {
   const url = settings().tvUrl;
   const blocked = location.protocol === 'https:' && /^http:/i.test(url);
-  if (!url) return `<p class="muted">Keine Adresse hinterlegt.</p><a class="btn" href="#/einstellungen">Einstellungen</a>`;
+  if (!url) return `<p class="muted">Keine Adresse hinterlegt</p><a class="btn" href="#/einstellungen">Einstellungen</a>`;
   if (blocked) {
-    return `<div class="empty" style="padding:18px 8px">${icon('tv')}<p>Die Fernbedienung läuft im Heimnetz über http. Aus dieser https-Seite heraus darf der Browser sie nicht einbetten.</p>
-      <a class="btn btn-primary" style="margin-top:14px" href="${esc(url)}" target="_blank" rel="noopener">${icon('link')}Fernbedienung öffnen</a></div>`;
+    return `<div class="empty" style="padding:20px 8px">${icon('tv')}<p>Die Fernbedienung läuft im Heimnetz über http. Aus dieser https-Seite heraus darf der Browser sie nicht einbetten.</p>
+      <a class="btn btn-primary" style="margin-top:16px" href="${esc(url)}" target="_blank" rel="noopener">${icon('link')}Fernbedienung öffnen</a></div>`;
   }
   return `<iframe class="remote-frame" src="${esc(url)}" title="TV-Fernbedienung" allow="clipboard-write" ${full ? 'style="height:min(860px, 82vh)"' : ''}></iframe>
     <p class="tiny muted" style="margin-top:8px">Funktioniert im Heimnetz. Wenn hier nichts erscheint: Chromecast kurz per Taste wecken.</p>`;
@@ -2730,8 +2725,8 @@ function renderHome() {
     <div class="span-7 stack">
       ${HA.ready() ? `<div class="card"><div class="card-head"><h2>${icon('house')}Smart Home</h2><span class="chip">Home Assistant</span></div><div id="haBox"></div></div>` :
       `<div class="card"><div class="card-head"><h2>${icon('house')}Smart Home</h2><span class="chip chip-accent">in Planung</span></div>
-        <p class="muted" style="margin-bottom:14px">Sobald in der neuen Wohnung die Steuerbox läuft, erscheinen hier echte Geräte zum Schalten. So sieht der Plan aus:</p>
-        <div class="stack">${PLANNED_ROOMS.map(([room, devs]) => `<div class="room"><h2 style="margin-bottom:10px">${room}</h2><div class="devices">${devs.map(([ic, n, href]) => href ?
+        <p class="muted" style="margin-bottom:16px">Sobald in der neuen Wohnung die Steuerbox läuft, erscheinen hier echte Geräte zum Schalten. So sieht der Plan aus:</p>
+        <div class="stack">${PLANNED_ROOMS.map(([room, devs]) => `<div class="room"><h2 style="margin-bottom:12px">${room}</h2><div class="devices">${devs.map(([ic, n, href]) => href ?
           `<a class="device on" href="${href}" style="text-decoration:none"><span class="di">${icon(ic)}</span><div><b>${n}</b><small>Fernbedienung</small></div></a>` :
           `<div class="device planned"><span class="di">${icon(ic)}</span><div><b>${n}</b><small>geplant</small></div></div>`).join('')}</div></div>`).join('')}</div></div>
       <div class="card"><div class="card-head"><h2>${icon('list')}So wird’s verbunden</h2></div>
@@ -2744,7 +2739,7 @@ function renderHome() {
 V.zuhause = {
   render(r) {
     if (r.sub === 'tv') {
-      return `<a class="btn btn-ghost btn-s" href="#/zuhause" style="margin-bottom:10px">${icon('left', 'ic-s')}Zuhause</a>
+      return `<a class="btn btn-ghost btn-s" href="#/zuhause" style="margin-bottom:12px">${icon('left', 'ic-s')}Zuhause</a>
         <div class="card" style="max-width:520px;margin:0 auto;padding:12px">${tvBlock(true)}</div>`;
     }
     return pageHead('Zuhause', 'Fernseher und bald die ganze Wohnung') + renderHome();
@@ -2769,7 +2764,7 @@ const FIX_SUGGEST = [
   ['Handyvertrag', 'Kommunikation', 'm'], ['Rundfunkbeitrag', 'Wohnen', 'q', 55.08], ['Haftpflichtversicherung', 'Versicherung', 'y'],
   ['Hausratversicherung', 'Versicherung', 'y'], ['EGYM Wellpass', 'Sport', 'm'], ['Streaming', 'Abos', 'm']
 ];
-const eur = v => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: Math.abs(v) >= 1000 ? 0 : 2 }).format(v || 0);
+const eur = v => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0);
 const spendCat = id => SPEND_CATS.find(c => c[0] === id) || SPEND_CATS[SPEND_CATS.length - 1];
 const monthName = m => { const [y, mo] = m.split('-').map(Number); return `${MONTHS_LONG[mo - 1]} ${y}`; };
 const shiftMonth = (m, n) => { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo - 1 + n, 1); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; };
@@ -2825,7 +2820,7 @@ function renderFinDash() {
       <div class="card"><div class="stat-label">Ausgaben ${MONTHS_LONG[+m.slice(5) - 1]}</div><div class="stat-value">${eur(spent)}</div><div class="stat-foot">${Finance.expenses(m).filter(e => e.cat !== 'fix').length} Einträge ohne Fixkosten</div></div>
       <div class="card"><div class="stat-label">Fixkosten pro Monat</div><div class="stat-value">${eur(fixed)}</div><div class="stat-foot">${imp ? `${eur(Finance.fixDebits(m))} schon abgebucht` : `${eur(fixed * 12)} im Jahr`}</div></div>
       <div class="card"><div class="stat-label">${budgetTotal ? 'Budget übrig' : 'Ø letzte 3 Monate'}</div><div class="stat-value">${budgetTotal ? eur(budgetTotal - spent) : prev3.length ? eur(sum(prev3) / prev3.length) : '–'}</div>
-        ${budgetTotal ? `<div class="bar${spent > budgetTotal ? ' over' : ''}" style="margin-top:10px"><span style="width:${clamp(spent / budgetTotal * 100, 0, 100)}%"></span></div><div class="stat-foot">von ${eur(budgetTotal)}</div>` : '<div class="stat-foot">variable Ausgaben</div>'}</div>
+        ${budgetTotal ? `<div class="stat-foot">von ${eur(budgetTotal)} Budget</div>` : '<div class="stat-foot">variable Ausgaben</div>'}</div>
       ${imp ? `<div class="card"><div class="stat-label">Saldo ${MONTHS_LONG[+m.slice(5) - 1]}</div><div class="stat-value" style="color:${income - spent - Finance.fixDebits(m) >= 0 ? 'var(--good)' : 'var(--bad)'}">${eur(income - spent - Finance.fixDebits(m))}</div><div class="stat-foot">Einnahmen ${eur(income)} laut Konto</div></div>`
         : `<div class="card"><div class="stat-label">Monat gesamt</div><div class="stat-value">${eur(fixed + spent)}</div><div class="stat-foot">fix + variabel</div></div>`}</div>
     <div class="quick">
@@ -2833,16 +2828,16 @@ function renderFinDash() {
       <button class="quick-btn" data-act="fixEdit"><span class="qi">${icon('calendar')}</span><span>Fixkosten<small>Vertrag hinzufügen</small></span></button>
       <button class="quick-btn" data-act="meterNew"><span class="qi">${icon('meter')}</span><span>Zählerstand<small>Strom, Wasser, Heizung</small></span></button>
       ${fgLoadBtn(`<span class="qi">${icon('sync')}</span><span>Finanzguru laden<small>${fg ? 'zuletzt ' + fmtDate(fg.loaded) : 'Export-Datei wählen'}</small></span>`, 'quick-btn', true)}</div>
-    ${fg ? `<p class="small muted" style="margin:-6px 4px 16px">Finanzguru-Export „${esc(fg.file)}“ · Umsätze vom ${fmtDate(fg.from, { plain: true })} bis ${fmtDate(fg.to, { plain: true })} · ${fg.added} neu übernommen${fg.dup ? `, ${fg.dup} schon vorhanden` : ''}${fg.skipped ? `, ${fg.skipped} Umbuchungen ausgelassen` : ''}</p>` : ''}
+    ${fg ? `<p class="small muted" style="margin:-8px 4px 16px">Finanzguru-Export „${esc(fg.file)}“ · Umsätze vom ${fmtDate(fg.from, { plain: true })} bis ${fmtDate(fg.to, { plain: true })} · ${fg.added} neu übernommen${fg.dup ? `, ${fg.dup} schon vorhanden` : ''}${fg.skipped ? `, ${fg.skipped} Umbuchungen ausgelassen` : ''}</p>` : ''}
     <div class="grid">
       <div class="card span-7"><div class="card-head"><h2>${icon('chart')}Ausgaben pro Monat</h2><span class="muted small">ohne Fixkosten</span></div>
         ${Charts.slot({ type: 'bars', bars: months, height: 220, yFmt: v => fmt(v) + ' €', label: 'Ausgaben pro Monat', empty: 'Trag deine erste Ausgabe ein.' })}</div>
       <div class="card span-5"><div class="card-head"><h2>${icon('wallet')}Wofür im ${MONTHS_LONG[+m.slice(5) - 1]}</h2></div>
-        ${Object.keys(byCat).length ? hbars(Object.keys(byCat).map(k => ({ label: spendCat(k)[1], value: Math.round(byCat[k]) })).sort((a, b) => b.value - a.value), v => fmt(v) + ' €') : '<p class="empty">Noch keine Ausgaben in diesem Monat.</p>'}</div>
+        ${Object.keys(byCat).length ? hbars(Object.keys(byCat).map(k => ({ label: spendCat(k)[1], value: Math.round(byCat[k]) })).sort((a, b) => b.value - a.value), v => fmt(v) + ' €') : '<p class="empty">Noch keine Ausgaben in diesem Monat</p>'}</div>
       <div class="card span-6"><div class="card-head"><h2>${icon('calendar')}Nächste Abbuchungen</h2><a class="btn btn-ghost btn-s" href="#/finanzen/fixkosten">Fixkosten</a></div>
         <div class="list">${due.map(x => `<div class="li"><div class="li-main"><div class="li-title">${esc(x.f.name)}</div><div class="li-sub">${fmtDate(x.d, { day: true })} · ${INTERVALS[x.f.interval][0]}</div></div><span class="li-end">${eur(x.f.amount)}</span></div>`).join('') || `<p class="empty">Keine Abbuchung in den nächsten drei Wochen${Finance.fixed().some(f => !f.day) ? ' (Tag der Abbuchung bei den Fixkosten eintragen)' : ''}.</p>`}</div></div>
       <div class="card span-6"><div class="card-head"><h2>${icon('house')}Fixkosten nach Bereich</h2></div>
-        ${Object.keys(fixByCat).length ? hbars(Object.keys(fixByCat).map(k => ({ label: k, value: Math.round(fixByCat[k]) })).sort((a, b) => b.value - a.value), v => fmt(v) + ' €') : `<p class="empty">Noch keine Fixkosten.</p><button class="btn" data-act="fixEdit">${icon('plus')}Erste Fixkosten anlegen</button>`}</div>
+        ${Object.keys(fixByCat).length ? hbars(Object.keys(fixByCat).map(k => ({ label: k, value: Math.round(fixByCat[k]) })).sort((a, b) => b.value - a.value), v => fmt(v) + ' €') : `<p class="empty">Noch keine Fixkosten</p><button class="btn" data-act="fixEdit">${icon('plus')}Erste Fixkosten anlegen</button>`}</div>
       ${fgSuggestCard('span-12')}
       <div class="card span-12"><div class="card-head"><h2>${icon('euro')}Vermietung</h2></div>
         <p class="muted">Nebenkosten, Mietverträge und Kalkulation der Mietwohnungen laufen weiter in deinem eigenen Nebenkosten-Dashboard (Ordner „Mietswohnungen → Nebenkosten“). Diese Seite ist für deine eigenen Kosten in der neuen Wohnung.</p></div>
@@ -2864,12 +2859,12 @@ function renderSpending() {
       <p class="stat-value" style="margin:0 0 12px">${eur(Finance.spent(finMonth))}<small>${sum(Object.values(budget)) ? ' von ' + eur(sum(Object.values(budget))) : ''}</small></p>
       <div class="stack">${cats.map(c => {
         const v = byCat[c[0]] || 0, b = budget[c[0]] || 0;
-        return `<div class="macro"><div class="macro-head"><span class="row" style="gap:6px">${icon(c[2], 'ic-s')}${c[1]}</span><span class="num"><b>${eur(v)}</b>${b ? ' / ' + eur(b) : ''}</span></div>
+        return `<div class="macro"><div class="macro-head"><span class="row" style="gap:8px">${icon(c[2], 'ic-s')}${c[1]}</span><span class="num"><b>${eur(v)}</b>${b ? ' / ' + eur(b) : ''}</span></div>
           ${b ? `<div class="bar${v > b ? ' over' : ''}"><span style="width:${clamp(v / b * 100, 0, 100)}%"></span></div>` : ''}</div>`;
-      }).join('') || '<p class="muted">Leg Monatsbudgets fest, dann siehst du hier, wie viel noch übrig ist.</p>'}</div></div>
-    <div class="card span-7" style="padding:6px 16px">${Object.keys(groups).map(d => `<p class="stat-label" style="margin:14px 4px 4px">${fmtDate(d, { day: true })} · ${eur(sum(groups[d].filter(e => !e.inc).map(e => e.amount)))}</p>
-      <div class="list">${groups[d].map(e => { const c = spendCat(e.cat); return `<button class="li" data-act="spendEdit" data-id="${e.id}"><span class="tile-ic" style="width:34px;height:34px">${icon(c[2], 'ic-s')}</span><div class="li-main"><div class="li-title">${esc(e.note || c[1])}</div><div class="li-sub">${c[1]}${e.src === 'fg' ? ' · Konto' + (e.account ? ' ' + esc(e.account) : '') : ''}</div></div><span class="li-end"${e.inc ? ' style="color:var(--good)"' : ''}>${e.inc ? '+' : ''}${eur(e.amount)}</span></button>`; }).join('')}</div>`).join('')
-      || emptyState('wallet', 'Keine Ausgaben in diesem Monat.', `<button class="btn btn-primary" data-act="spendNew">Ausgabe eintragen</button>`)}</div></div>`;
+      }).join('') || '<p class="muted">Leg Monatsbudgets fest, dann siehst du hier, wie viel noch übrig ist</p>'}</div></div>
+    <div class="card span-7" style="padding:8px 16px">${Object.keys(groups).map(d => `<p class="stat-label" style="margin:16px 4px 4px">${fmtDate(d, { day: true })} · ${eur(sum(groups[d].filter(e => !e.inc).map(e => e.amount)))}</p>
+      <div class="list">${groups[d].map(e => { const c = spendCat(e.cat); return `<button class="li" data-act="spendEdit" data-id="${e.id}"><span class="tile-ic" style="width:36px;height:36px">${icon(c[2], 'ic-s')}</span><div class="li-main"><div class="li-title">${esc(e.note || c[1])}</div><div class="li-sub">${c[1]}${e.src === 'fg' ? ' · Konto' + (e.account ? ' ' + esc(e.account) : '') : ''}</div></div><span class="li-end"${e.inc ? ' style="color:var(--good)"' : ''}>${e.inc ? '+' : ''}${eur(e.amount)}</span></button>`; }).join('')}</div>`).join('')
+      || emptyState('wallet', 'Keine Ausgaben in diesem Monat', `<button class="btn btn-primary" data-act="spendNew">Ausgabe eintragen</button>`)}</div></div>`;
 }
 A.finMonth = el => { const n = shiftMonth(finMonth, +el.dataset.d); if (n <= todayKey().slice(0, 7)) { finMonth = n; rerender(); } };
 let spendDraft = null;
@@ -2879,7 +2874,7 @@ function spendSheet(isNew) {
   const d = spendDraft;
   Sheet.open(`${sheetHead(isNew ? 'Ausgabe eintragen' : 'Ausgabe bearbeiten')}
     <form class="stack" data-submit="spendSave">
-      <label class="field">Betrag (€)<input class="input" name="amount" inputmode="decimal" value="${d.amount === '' ? '' : fmtFixed(d.amount, 2)}" placeholder="0,00" style="font-size:28px;font-weight:700;min-height:58px" autofocus required></label>
+      <label class="field">Betrag (€)<input class="input" name="amount" inputmode="decimal" value="${d.amount === '' ? '' : fmtFixed(d.amount, 2)}" placeholder="0,00" style="font-size:28px;font-weight:700;min-height:60px" autofocus required></label>
       <div class="field"><span>Kategorie</span><div class="chips">${(d.inc ? SPEND_CATS.filter(c => c[0] === 'einnahme') : SPEND_CATS.filter(c => c[0] !== 'einnahme')).map(c => `<label class="chip chip-btn${c[0] === d.cat ? ' active' : ''}"><input type="radio" name="cat" value="${c[0]}"${c[0] === d.cat ? ' checked' : ''} class="sr" data-change="chipRadio">${c[1]}</label>`).join('')}</div></div>
       <div class="fields"><label class="field">Notiz<input class="input" name="note" value="${esc(d.note)}" placeholder="z. B. Rewe, Kino"></label>
       <label class="field">Datum<input class="input" type="date" name="date" value="${d.date}" max="${todayKey()}"></label></div>
@@ -2976,7 +2971,7 @@ function meterStats(type) {
 function renderMeters() {
   const prices = Finance.prices();
   const used = METERS.filter(m => Finance.meters().some(x => x.type === m[0]));
-  return `<div class="row-between wrap" style="margin-bottom:16px"><p class="muted">Tipp: Bei der Wohnungsübergabe alle Zähler mit Foto festhalten und hier eintragen.</p>
+  return `<div class="row-between wrap" style="margin-bottom:16px"><p class="muted">Tipp: Bei der Wohnungsübergabe alle Zähler mit Foto festhalten und hier eintragen</p>
       <button class="btn btn-primary" data-act="meterNew">${icon('plus')}Zählerstand</button></div>
     <div class="grid">${used.map(([type, name, unit, ic]) => {
       const st = meterStats(type), last = st.r[st.r.length - 1], price = prices[type] || 0;
@@ -2988,8 +2983,8 @@ function renderMeters() {
           <div><b>${st.perDay ? fmt(st.perDay * 365) : '–'}</b><span>${unit} im Jahr${price && st.perDay ? ' ≈ ' + eur(st.perDay * 365 * price) : ''}</span></div></div>
         ${Charts.slot({ type: 'line', points: pts, height: 160, label: name + ' Zählerstand', yFmt: v => fmt(v), empty: 'Ab zwei Ablesungen siehst du den Verbrauch.' })}
         <div class="list" style="margin-top:8px">${st.r.slice().reverse().slice(0, 5).map((x, i, arr) => { const prev = arr[i + 1]; return `<div class="li"><span class="li-main">${fmtDate(x.date, { day: true })}</span><span class="li-end">${fmt(x.value, 1)} ${unit}${prev ? `<div class="li-sub">+${fmt(x.value - prev.value, 1)} in ${daysBetween(prev.date, x.date)} T.</div>` : ''}</span><button class="set-del" data-act="meterDel" data-id="${x.id}" aria-label="Ablesung löschen">${icon('x', 'ic-s')}</button></div>`; }).join('')}</div>
-        <div class="row" style="margin-top:8px"><span class="small muted">Preis je ${unit}:</span><input class="set-in" style="max-width:90px" inputmode="decimal" aria-label="Preis je ${unit} in Euro" placeholder="0,32" value="${price ? fmt(price, 4) : ''}" data-change="meterPrice" data-t="${type}"><span class="small muted">€</span></div></div>`;
-    }).join('') || `<div class="card span-12">${emptyState('meter', 'Noch keine Zählerstände.', `<button class="btn btn-primary" data-act="meterNew">Ersten Zählerstand eintragen</button>`)}</div>`}</div>`;
+        <div class="row" style="margin-top:8px"><span class="small muted">Preis je ${unit}:</span><input class="set-in" style="max-width:92px" inputmode="decimal" aria-label="Preis je ${unit} in Euro" placeholder="0,32" value="${price ? fmt(price, 4) : ''}" data-change="meterPrice" data-t="${type}"><span class="small muted">€</span></div></div>`;
+    }).join('') || `<div class="card span-12">${emptyState('meter', 'Noch keine Zählerstände', `<button class="btn btn-primary" data-act="meterNew">Ersten Zählerstand eintragen</button>`)}</div>`}</div>`;
 }
 A.meterNew = () => Sheet.open(`${sheetHead('Zählerstand eintragen')}
   <form class="stack" data-submit="meterSave"><div class="fields"><label class="field">Zähler<select class="input" name="type">${METERS.map(m => `<option value="${m[0]}">${m[1]} (${m[2]})</option>`).join('')}</select></label>
@@ -3286,7 +3281,7 @@ function sortTasks(a) {
 function taskRow(t) {
   const over = t.due && t.due < todayKey() && !t.done;
   return `<div class="task${t.done ? ' done' : ''}"><button class="chk${t.done ? ' on' : ''}" data-act="taskToggle" data-id="${t.id}" aria-label="${t.done ? 'Als offen markieren' : 'Erledigt'}" aria-pressed="${!!t.done}">${icon('check', 'ic-s')}</button>
-    <button class="task-main" data-act="taskEdit" data-id="${t.id}"><span class="li-title">${t.prio ? '<span class="prio" aria-label="wichtig">!</span> ' : ''}${esc(t.title)}</span>
+    <button class="task-main" data-act="taskEdit" data-id="${t.id}"><span class="li-title">${t.prio ? '<span class="prio-dot" aria-label="wichtig"></span>' : ''}${esc(t.title)}</span>
     <span class="li-sub">${esc(t.list || 'Privat')}${t.due ? ` · <span class="${over ? 'overdue' : ''}">${fmtDate(t.due, { day: true })}</span>` : ''}${t.repeat ? ' · ' + REPEATS[t.repeat] : ''}</span></button></div>`;
 }
 function eventRow(e, k) {
@@ -3303,18 +3298,18 @@ function renderPlanDash() {
     const k = addDays(t, i), ev = Planner.eventsOn(k), ts = Planner.open().filter(x => x.due === k);
     if (ev.length || ts.length) week.push({ k, ev, ts });
   }
-  return `<form class="row" data-submit="taskQuick" style="margin-bottom:16px"><input class="input grow" name="title" placeholder="Neue Aufgabe für heute … (Enter)" autocomplete="off" aria-label="Neue Aufgabe"><button class="btn btn-primary">${icon('plus')}<span class="desktop-only">Aufgabe</span></button></form>
+  return `<form class="row" data-submit="taskQuick" style="margin-bottom:16px"><input class="input grow" name="title" placeholder="Aufgabe für heute" autocomplete="off" aria-label="Neue Aufgabe"><button class="btn btn-primary">${icon('plus')}<span class="desktop-only">Aufgabe</span></button></form>
     <div class="grid">
       <div class="card span-6"><div class="card-head"><h2>${icon('calendar')}Heute</h2><span class="muted small">${DAYS_LONG[new Date().getDay()]}, ${fmtDate(t, { plain: true })}</span></div>
         ${evToday.length ? `<div class="list">${evToday.map(e => eventRow(e)).join('')}</div>` : ''}
         ${due.length ? `<div class="tasks" style="margin-top:${evToday.length ? 10 : 0}px">${due.map(taskRow).join('')}</div>` : ''}
-        ${!evToday.length && !due.length ? '<p class="empty">Heute steht nichts an.</p>' : ''}
+        ${!evToday.length && !due.length ? '<p class="empty">Heute steht nichts an</p>' : ''}
         <div class="row" style="margin-top:12px"><button class="btn btn-s" data-act="eventNew" data-d="${t}">${icon('plus', 'ic-s')}Termin</button><a class="btn btn-s btn-ghost" href="#/planer/kalender">Kalender</a></div></div>
       <div class="card span-6"><div class="card-head"><h2>${icon('cart')}Einkaufsliste</h2><a class="btn btn-ghost btn-s" href="#/planer/einkauf">${shop.length} offen</a></div>
-        <form class="row" data-submit="shopAdd" style="margin-bottom:8px"><input class="input grow" name="name" placeholder="Was fehlt? (Enter)" autocomplete="off" aria-label="Artikel hinzufügen"></form>
-        <div class="tasks">${shop.slice(0, 8).map(shopRow).join('') || '<p class="empty">Alles da.</p>'}</div></div>
+        <form class="row" data-submit="shopAdd" style="margin-bottom:8px"><input class="input grow" name="name" placeholder="Was fehlt" autocomplete="off" aria-label="Artikel hinzufügen"></form>
+        <div class="tasks">${shop.slice(0, 8).map(shopRow).join('') || '<p class="empty">Alles da</p>'}</div></div>
       <div class="card span-12"><div class="card-head"><h2>${icon('list')}Nächste 7 Tage</h2><a class="btn btn-ghost btn-s" href="#/planer/aufgaben">Alle Aufgaben</a></div>
-        ${week.map(d => `<p class="stat-label" style="margin:12px 4px 4px">${fmtDate(d.k, { day: true })}</p>${d.ev.length ? `<div class="list">${d.ev.map(e => eventRow(e)).join('')}</div>` : ''}<div class="tasks">${d.ts.map(taskRow).join('')}</div>`).join('') || '<p class="empty">Keine Termine oder fälligen Aufgaben in den nächsten sieben Tagen.</p>'}</div>
+        ${week.map(d => `<p class="stat-label" style="margin:12px 4px 4px">${fmtDate(d.k, { day: true })}</p>${d.ev.length ? `<div class="list">${d.ev.map(e => eventRow(e)).join('')}</div>` : ''}<div class="tasks">${d.ts.map(taskRow).join('')}</div>`).join('') || '<p class="empty">Keine Termine oder fälligen Aufgaben in den nächsten sieben Tagen</p>'}</div>
     </div>`;
 }
 
@@ -3324,11 +3319,11 @@ function renderTasks() {
   const lists = Array.from(new Set(TASK_LISTS.concat(Planner.tasks().map(t => t.list).filter(Boolean))));
   const all = sortTasks(Planner.tasks().filter(t => !taskFilter || t.list === taskFilter));
   const open = all.filter(t => !t.done), done = all.filter(t => t.done);
-  return `<form class="row" data-submit="taskQuick" style="margin-bottom:12px"><input class="input grow" name="title" placeholder="Neue Aufgabe … (Enter)" autocomplete="off" aria-label="Neue Aufgabe"><input type="hidden" name="list" value="${esc(taskFilter)}"><button class="btn btn-primary">${icon('plus')}<span class="desktop-only">Hinzufügen</span></button></form>
-    <div class="row-between wrap" style="margin-bottom:14px"><div class="chips">${[''].concat(lists).map(l => `<button class="chip chip-btn${l === taskFilter ? ' active' : ''}" data-act="taskFilter" data-l="${esc(l)}">${l ? esc(l) : 'Alle'} <span class="muted">${Planner.open().filter(t => !l || t.list === l).length}</span></button>`).join('')}</div>
+  return `<form class="row" data-submit="taskQuick" style="margin-bottom:12px"><input class="input grow" name="title" placeholder="Neue Aufgabe" autocomplete="off" aria-label="Neue Aufgabe"><input type="hidden" name="list" value="${esc(taskFilter)}"><button class="btn btn-primary">${icon('plus')}<span class="desktop-only">Hinzufügen</span></button></form>
+    <div class="row-between wrap" style="margin-bottom:16px"><div class="chips">${[''].concat(lists).map(l => `<button class="chip chip-btn${l === taskFilter ? ' active' : ''}" data-act="taskFilter" data-l="${esc(l)}">${l ? esc(l) : 'Alle'} <span class="muted">${Planner.open().filter(t => !l || t.list === l).length}</span></button>`).join('')}</div>
       <button class="btn btn-s" data-act="moveList">${icon('tasks', 'ic-s')}Umzugs-Checkliste</button></div>
-    <div class="card"><div class="tasks">${open.map(taskRow).join('') || '<p class="empty">Keine offenen Aufgaben.</p>'}</div>
-      ${done.length ? `<button class="btn btn-ghost btn-s" style="margin-top:10px" data-act="toggleDone">${showDone ? 'Erledigte ausblenden' : `${done.length} erledigte anzeigen`}</button>${showDone ? `<div class="tasks">${done.map(taskRow).join('')}</div><button class="btn btn-ghost btn-s btn-danger" data-act="clearDone">Erledigte löschen</button>` : ''}` : ''}</div>`;
+    <div class="card"><div class="tasks">${open.map(taskRow).join('') || '<p class="empty">Keine offenen Aufgaben</p>'}</div>
+      ${done.length ? `<button class="btn btn-ghost btn-s" style="margin-top:12px" data-act="toggleDone">${showDone ? 'Erledigte ausblenden' : `${done.length} erledigte anzeigen`}</button>${showDone ? `<div class="tasks">${done.map(taskRow).join('')}</div><button class="btn btn-ghost btn-s btn-danger" data-act="clearDone">Erledigte löschen</button>` : ''}` : ''}</div>`;
 }
 A.taskFilter = el => { taskFilter = el.dataset.l; Local.set('taskFilter', taskFilter); rerender(); };
 A.toggleDone = () => { showDone = !showDone; rerender(); };
@@ -3404,10 +3399,10 @@ function renderShopping() {
   const groups = {};
   open.forEach(s => { const c = s.cat || shopCat(s.name); (groups[c] = groups[c] || []).push(s); });
   const order = SHOP_CATS.map(c => c[0]).concat(['Sonstiges']);
-  return `<form class="row" data-submit="shopAdd" style="margin-bottom:12px"><input class="input grow" name="name" placeholder="Was fehlt? z. B. „Milch, Bananen, Brot“ (Enter)" autocomplete="off" aria-label="Artikel hinzufügen"><button class="btn btn-primary">${icon('plus')}<span class="desktop-only">Hinzufügen</span></button></form>
+  return `<form class="row" data-submit="shopAdd" style="margin-bottom:12px"><input class="input grow" name="name" placeholder="Was fehlt, mehrere mit Komma" autocomplete="off" aria-label="Artikel hinzufügen"><button class="btn btn-primary">${icon('plus')}<span class="desktop-only">Hinzufügen</span></button></form>
     ${freq.length ? `<div class="chips" style="margin-bottom:16px">${freq.map(n => `<button class="chip chip-btn" data-act="shopQuick" data-n="${esc(n)}">${icon('plus', 'ic-s')}${esc(n)}</button>`).join('')}</div>` : ''}
     <div class="grid">${order.filter(c => groups[c]).map(c => `<div class="card span-4"><div class="card-head"><h2>${c}</h2><span class="muted small">${groups[c].length}</span></div><div class="tasks">${groups[c].map(shopRow).join('')}</div></div>`).join('')
-      || `<div class="card span-12">${emptyState('cart', 'Die Einkaufsliste ist leer.')}</div>`}
+      || `<div class="card span-12">${emptyState('cart', 'Die Einkaufsliste ist leer')}</div>`}
       ${done.length ? `<div class="card span-12"><div class="card-head"><h2>Im Wagen</h2><button class="btn btn-s" data-act="shopClear">Erledigte entfernen</button></div><div class="tasks">${done.map(shopRow).join('')}</div></div>` : ''}</div>`;
 }
 function addShopItems(text) {
@@ -3459,7 +3454,7 @@ function renderCalendar() {
       ${evs.length ? `<div class="list">${evs.map(e => eventRow(e)).join('')}</div>` : ''}
       ${ts.length ? `<div class="tasks" style="margin-top:8px">${sortTasks(ts).map(taskRow).join('')}</div>` : ''}
       ${wos.concat(rs).length ? `<div class="list" style="margin-top:8px">${wos.map(w => `<a class="li" href="#/training/einheit/${w.id}">${icon('gym', 'ic-s')}<span class="li-main">${esc(w.name)}</span><span class="li-end muted small">${fmtTime(w.start)}</span></a>`).join('')}${rs.map(r => `<a class="li" href="#/laufen/lauf/${r.id}">${icon('run', 'ic-s')}<span class="li-main">${fmt(r.km, 1)} km ${esc(r.type || '')}</span><span class="li-end muted small">${fmtTime(r.start)}</span></a>`).join('')}</div>` : ''}
-      ${!evs.length && !ts.length && !wos.length && !rs.length ? '<p class="empty">Nichts eingetragen.</p>' : ''}</div></div>`;
+      ${!evs.length && !ts.length && !wos.length && !rs.length ? '<p class="empty">Nichts eingetragen</p>' : ''}</div></div>`;
 }
 A.calMonth = el => { calMonth = shiftMonth(calMonth, +el.dataset.d); calDay = calMonth === todayKey().slice(0, 7) ? todayKey() : calMonth + '-01'; rerender(); };
 A.calToday = () => { calMonth = todayKey().slice(0, 7); calDay = todayKey(); rerender(); };
@@ -3748,8 +3743,8 @@ const NOOP_STEPS = `<ol class="steps small">
 
 function renderNoop() {
   if (!NoopData.has()) {
-    return `<div class="card" style="max-width:760px">${emptyState('pulse', 'Hier erscheinen deine Werte aus NOOP: Recovery, Schlaf, HRV, Belastung und alle Workouts, die NOOP erkannt hat.', noopLoadBtn('NOOP laden', 'btn-primary'))}
-      <hr class="divider"><h3 style="margin-bottom:10px">So geht’s</h3>${NOOP_STEPS}</div>`;
+    return `<div class="card" style="max-width:760px">${emptyState('pulse', 'Hier erscheinen deine Werte aus NOOP: Recovery, Schlaf, HRV, Belastung und alle Workouts, die NOOP erkannt hat', noopLoadBtn('NOOP laden', 'btn-primary'))}
+      <hr class="divider"><h3 style="margin-bottom:12px">So geht’s</h3>${NOOP_STEPS}</div>`;
   }
   const d = NoopData.days(), meta = NoopData.meta() || {};
   const t = todayKey();
@@ -3764,27 +3759,27 @@ function renderNoop() {
   const delta = (v, base, unit, higherBetter) => {
     if (v == null || base == null) return '';
     const diff = v - base, good = higherBetter ? diff >= 0 : diff <= 0;
-    return `<span class="${good ? 'delta-up' : 'delta-down'}">${diff >= 0 ? '▲' : '▼'} ${fmt(Math.abs(diff))} ${unit}</span> zum 30-Tage-Schnitt`;
+    return `<span class="${good ? 'delta-up' : 'delta-down'}">${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))} ${unit}</span> zum 30-Tage-Schnitt`;
   };
-  return `<div class="row-between wrap" style="margin-bottom:14px"><p class="muted small">Sicherung „${esc(meta.file || 'NOOP')}“ · geladen ${meta.loaded ? fmtDate(meta.loaded) + ', ' + fmtTime(meta.loaded) : ''} · Daten bis ${meta.to ? fmtDate(meta.to) : '–'}</p>
+  return `<div class="row-between wrap" style="margin-bottom:16px"><p class="muted small">Sicherung „${esc(meta.file || 'NOOP')}“ · geladen ${meta.loaded ? fmtDate(meta.loaded) + ', ' + fmtTime(meta.loaded) : ''} · Daten bis ${meta.to ? fmtDate(meta.to) : '–'}</p>
       ${noopLoadBtn('Neue Sicherung laden')}</div>
     <div class="kpis no-hl">
-      <div class="card"><div class="stat-label">Recovery${rec && rec.day !== t ? ' · ' + fmtDate(rec.day) : ''}</div><div class="stat-value" style="color:${rs.color}">${rec ? fmt(rec.v) : '–'}<small>%</small></div><div class="stat-foot"><span class="chip" style="color:${rs.color}">● ${rs.label}</span></div></div>
+      <div class="card"><div class="stat-label">Recovery${rec && rec.day !== t ? ' · ' + fmtDate(rec.day) : ''}</div><div class="stat-value" style="color:${rs.color}">${rec ? fmt(rec.v) : '–'}<small>%</small></div><div class="stat-foot"><span class="chip"><span class="dot" style="background:${rs.color};width:8px;height:8px"></span>${rs.label}</span></div></div>
       <div class="card"><div class="stat-label">HRV</div><div class="stat-value">${hrv ? fmt(hrv.v) : '–'}<small>ms</small></div><div class="stat-foot">${delta(hrv && hrv.v, hrv30, 'ms', true)}</div></div>
       <div class="card"><div class="stat-label">Ruhepuls</div><div class="stat-value">${rhr ? fmt(rhr.v) : '–'}<small>bpm</small></div><div class="stat-foot">${delta(rhr && rhr.v, rhr30, 'bpm', false)}</div></div>
       <div class="card"><div class="stat-label">Schlaf${sl && sl.day !== t ? ' · ' + fmtDate(sl.day) : ''}</div><div class="stat-value">${sl ? fmtSleep(sl.v).replace(' h', '') : '–'}<small>h</small></div><div class="stat-foot">${sl && d[sl.day].eff ? 'Effizienz ' + fmt(d[sl.day].eff * 100) + ' %' : ''}${st ? ` · Belastung ${fmt(st.v)}` : ''}</div></div></div>
     <div class="grid">
       <div class="card span-12"><div class="card-head"><h2>${icon('chart')}Recovery · 30 Tage</h2><span class="muted small">grün ab 67 %, rot unter 34 %</span></div>
         ${Charts.slot({ type: 'line', points: recPts, height: 220, zero: true, max: 100, label: 'Recovery der letzten 30 Tage', yFmt: v => fmt(v) + ' %', empty: 'Keine Recovery-Werte in den letzten 30 Tagen' })}</div>
-      <div class="card span-6"><div class="card-head"><h2>${icon('calendar')}Schlaf pro Nacht</h2><span class="muted small">Stunden</span></div>
+      <div class="card span-7"><div class="card-head"><h2>${icon('calendar')}Schlaf pro Nacht</h2><span class="muted small">Stunden</span></div>
         ${Charts.slot({ type: 'bars', bars: sleepBars, goal: 8, goalLabel: '8 h', height: 200, label: 'Schlaf pro Nacht', yFmt: v => fmt(v, 1), empty: 'Keine Schlafdaten' })}</div>
-      <div class="card span-6"><div class="card-head"><h2>${icon('flame')}Belastung pro Tag</h2><span class="muted small">NOOP-Skala 0–100</span></div>
-        ${Charts.slot({ type: 'bars', bars: strainBars, height: 200, label: 'Belastung pro Tag', yFmt: v => fmt(v), empty: 'Keine Belastungswerte' })}</div>
+      <div class="card span-5"><div class="card-head"><h2>${icon('flame')}Belastung</h2><span class="muted small">letzte 7 Tage, 0–100</span></div>
+        ${hbars(strainBars.slice(-7).reverse().map(b => ({ label: b.label + (b.strong ? ' (heute)' : ''), value: b.value })), v => fmt(v))}</div>
       <div class="card span-12"><div class="card-head"><h2>${icon('gym')}Workouts aus NOOP</h2><span class="muted small">${ws.length} gespeichert</span></div>
         <div class="list wrap-sub">${ws.slice(0, 20).map(w => `<div class="li"><span class="tile-ic" style="width:36px;height:36px;border-radius:11px">${icon(/run|walk|hik|treadmill/i.test(w.sport) ? 'run' : 'gym', 'ic-s')}</span>
           <div class="li-main"><div class="li-title">${esc(sportDe(w.sport))}${w.src === 'manual' ? ' <span class="chip">manuell</span>' : ''}</div>
           <div class="li-sub">${fmtDate(w.start, { day: true })}, ${fmtTime(w.start)} · ${fmtMin(w.dur)}${w.dist ? ' · ' + fmt(w.dist / 1000, 1) + ' km' : ''}${w.avgHr ? ` · Ø ${w.avgHr} / max ${w.maxHr || '–'} bpm` : ''}</div></div>
-          <div class="li-end">${w.strain != null ? fmt(w.strain) : '–'}<div class="li-sub">${w.kcal ? fmt(w.kcal) + ' kcal' : 'Belastung'}</div></div></div>`).join('') || '<p class="empty">Keine Workouts in der Sicherung.</p>'}</div></div>
+          <div class="li-end">${w.strain != null ? fmt(w.strain) : '–'}<div class="li-sub">${w.kcal ? fmt(w.kcal) + ' kcal' : 'Belastung'}</div></div></div>`).join('') || '<p class="empty">Keine Workouts in der Sicherung</p>'}</div></div>
     </div>`;
 }
 
@@ -3800,7 +3795,7 @@ function noopHomeCard() {
       <div><b>${sl ? fmtSleep(sl.v) : '–'}</b><span>Schlaf</span></div>
       <div><b>${hrv ? fmt(hrv.v) : '–'}</b><span>HRV (ms)</span></div>
       <div><b>${st ? fmt(st.v) : '–'}</b><span>Belastung</span></div></div>
-    ${w ? `<p class="small muted" style="margin-top:10px">Letztes Workout: ${esc(sportDe(w.sport))}, ${fmtDate(w.start, { day: true })}${w.strain != null ? ' · Belastung ' + fmt(w.strain) : ''}</p>` : ''}</a>`;
+    ${w ? `<p class="small muted" style="margin-top:12px">Letztes Workout: ${esc(sportDe(w.sport))}, ${fmtDate(w.start, { day: true })}${w.strain != null ? ' · Belastung ' + fmt(w.strain) : ''}</p>` : ''}</a>`;
 }
 
 /* =====================================================================
@@ -3829,7 +3824,7 @@ V.einstellungen = {
           <p class="tiny muted">Das Token bleibt nur in diesem Browser und wird nie synchronisiert oder exportiert.</p>
           <button class="btn btn-primary">Speichern</button></form></div>
       <div class="card span-12"><div class="card-head"><h2>${icon('sync')}Daten</h2><span class="muted small" data-sync>${esc(syncText())}</span></div>
-        <p class="muted" style="margin-bottom:14px">${counts}</p>
+        <p class="muted" style="margin-bottom:16px">${counts}</p>
         <div class="row wrap">
           <button class="btn" data-act="dataExport">Daten exportieren (JSON)</button>
           <label class="btn" style="cursor:pointer">Daten importieren<input type="file" accept="application/json,.json" data-change="dataImport" hidden></label>
