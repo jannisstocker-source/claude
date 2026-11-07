@@ -774,3 +774,14 @@ h1, .hero h1, .tile h2, .room h2, .sheet-head h2 { font-family: var(--font); fon
 .cal-day { border-radius: 8px; }
 .set-in, .set-type, .set-ok { border-radius: 8px; }
 @media (max-width: 560px) { .stat-value { font-size: 24px; } .stat-value small { font-size: 13px; } }
+
+.chart .band-label { fill: var(--muted); font-size: 11px; }
+.zone-rows { display: flex; flex-direction: column; gap: 12px; }
+.zone-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+.zone-row .zn { grid-row: span 2; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--ink); }
+.zone-row .zt { font-size: 14px; }
+.zone-row .zt small { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.zone-row .zv { grid-row: span 2; text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+.zone-row .zv small { display: block; color: var(--muted); font-size: 12px; }
+.zone-row .zb { height: 6px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.zone-row .zb span { display: block; height: 100%; border-radius: 4px; }

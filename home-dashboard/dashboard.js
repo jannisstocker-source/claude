@@ -596,7 +596,7 @@ const Charts = {
   },
 
   line(el, s, W) {
-    const pts = (s.points || []).filter(p => isFinite(p.y));
+    const pts = (s.points || []).filter(p => p.y != null && isFinite(p.y));
     const H = s.height || 220;
     if (!pts.length) { el.innerHTML = `<div class="chart-empty" style="min-height:${H}px">${s.empty || 'Noch keine Daten'}</div>`; return; }
     const pl = 46, pr = 14, pt = 14, pb = 28;
@@ -613,6 +613,14 @@ const Charts = {
     const Y = y => s.invert ? pt + (y - lo) / (hi - lo) * (H - pt - pb) : H - pb - (y - lo) / (hi - lo) * (H - pt - pb);
     const yFmt = s.yFmt || (v => fmt(v, 1));
     let g = '';
+    // Hinterlegte Bereiche (z. B. Pulszonen), nur innerhalb der Achse
+    (s.bands || []).forEach(b => {
+      const a = Math.max(lo, b.from), c = Math.min(hi, b.to);
+      if (c <= a) return;
+      const y1 = Math.min(Y(a), Y(c)), y2 = Math.max(Y(a), Y(c));
+      g += `<rect x="${pl}" y="${y1.toFixed(1)}" width="${W - pl - pr}" height="${(y2 - y1).toFixed(1)}" style="fill:${b.fill}"/>`;
+      if (b.label && y2 - y1 >= 14) g += `<text class="band-label" x="${W - pr - 6}" y="${(y1 + 13).toFixed(1)}" text-anchor="end">${esc(b.label)}</text>`;
+    });
     nt.ticks.filter(t => t >= lo && t <= hi).forEach(t => {
       g += `<line class="gridline" x1="${pl}" x2="${W - pr}" y1="${Y(t)}" y2="${Y(t)}"/>`;
       g += `<text x="${pl - 8}" y="${Y(t) + 4}" text-anchor="end">${esc(yFmt(t))}</text>`;
@@ -1501,7 +1509,8 @@ function renderWorkoutDetail(id) {
       <div class="card"><div class="stat-label">Belastung</div><div class="stat-value">${w.strain != null ? fmt(w.strain, 1) : '–'}<small>/ 100</small></div></div>
       <div class="card"><div class="stat-label">Kalorien</div><div class="stat-value">${w.kcal ? fmt(w.kcal) : '–'}<small>kcal</small></div></div>
       <div class="card"><div class="stat-label">Puls Ø / max</div><div class="stat-value">${w.avgHr || '–'}<small>/ ${w.maxHr || '–'} bpm</small></div></div></div>
-    <div class="card"><p class="muted">In NOOP aufgezeichnet (${esc(sportDe(w.sport))}). Sätze und Gewichte gibt es dafür nicht. Wenn du das Training hier im Logger mitschreibst, bekommst du beides.</p></div>`;
+    ${noopHrBlock(w)}
+    <div class="card" style="margin-top:16px"><p class="muted">In NOOP aufgezeichnet (${esc(sportDe(w.sport))}). Sätze und Gewichte gibt es dafür nicht. Wenn du das Training hier im Logger mitschreibst, bekommst du beides.</p></div>`;
   }
   return `<a class="btn btn-ghost btn-s" href="#/training/verlauf" style="margin-bottom:12px">${icon('left', 'ic-s')}Verlauf</a>
     ${pageHead(esc(w.name), `${fmtDate(w.start, { day: true, plain: true })} · ${fmtTime(w.start)}–${fmtTime(w.end)} Uhr`,
@@ -1521,6 +1530,29 @@ function renderWorkoutDetail(id) {
           return `<tr><td>${lab} ${isPr ? `<span class="badge-pr">PR</span>` : ''}</td><td>${fmt(s.kg, 2)} kg</td><td>${s.reps}</td><td>${s.type === 'w' ? '–' : fmt(e1rm(s.kg, s.reps), 1)}</td></tr>`;
         }).join('')}</tbody></table></div>`;
     }).join('')}</div>`;
+}
+// Pulsverlauf mit Zonen wie in NOOP (Zonen: 50/60/70/80/90 % des Maximalpulses)
+const ZONES = [['Erholung', 1], ['Fettverbrennung', 2], ['Aerob', 3], ['Schwelle', 4], ['Maximum', 5]];
+const zoneFill = (z, strong) => `color-mix(in srgb, var(--accent-mark) ${strong ? [0, 30, 45, 62, 80, 100][z] : [0, 5, 9, 14, 20, 28][z]}%, transparent)`;
+function noopHrBlock(w) {
+  if (!w.hr || !w.hr.v || !w.hr.v.some(x => x)) return '';
+  const step = w.hr.step || 10, max = w.hrMax;
+  const zoneOf = bpm => { if (!max) return 0; let z = 0; while (z < 5 && bpm >= [0.5, 0.6, 0.7, 0.8, 0.9][z] * max) z++; return z; };
+  const pts = w.hr.v.map((bpm, i) => bpm ? { x: i * step / 60, y: bpm, tip: `<b>${bpm} bpm</b>${max ? ` · Zone ${zoneOf(bpm) || '–'}` : ''}<br>Minute ${fmtDur(i * step)}` } : null).filter(Boolean);
+  const bands = max ? ZONES.map(([name, z]) => ({ from: [0.5, 0.6, 0.7, 0.8, 0.9][z - 1] * max, to: z === 5 ? max * 1.1 : [0.6, 0.7, 0.8, 0.9, 1][z - 1] * max, fill: zoneFill(z), label: 'Z' + z })) : [];
+  const total = w.zones ? sum(w.zones) : 0;
+  const rows = w.zones && total ? ZONES.slice().reverse().map(([name, z]) => {
+    const sec = w.zones[z], pct = sec / total * 100;
+    const loB = Math.round([0.5, 0.6, 0.7, 0.8, 0.9][z - 1] * max), hiB = Math.round([0.6, 0.7, 0.8, 0.9, 1][z - 1] * max);
+    return `<div class="zone-row"><span class="zn" style="background:${zoneFill(z, true)}">${z}</span>
+      <span class="zt">${name}<small>${loB}–${hiB} bpm</small></span><span class="zv">${fmtMin(sec)}<small>${fmt(pct)} %</small></span>
+      <span class="zb"><span style="width:${pct.toFixed(1)}%;background:${zoneFill(z, true)}"></span></span></div>`;
+  }).join('') + (w.zones[0] ? `<p class="small muted">Unter Zone 1: ${fmtMin(w.zones[0])}</p>` : '') : '<p class="muted">Keine Zonenzeiten vorhanden</p>';
+  return `<div class="grid" style="margin-top:16px">
+    <div class="card span-8"><div class="card-head"><h2>${icon('pulse')}Herzfrequenz</h2><span class="muted small">Ø ${w.avgHr || '–'} · max ${w.maxHr || '–'} bpm</span></div>
+      ${Charts.slot({ type: 'line', points: pts, height: 280, area: false, bands, label: 'Herzfrequenz-Verlauf', xFmt: v => `${Math.round(v)} min`, yFmt: v => fmt(v) })}</div>
+    <div class="card span-4"><div class="card-head"><h2>Zeit in Zonen</h2><span class="muted small">${max ? `Maximalpuls ${max}` : ''}</span></div>
+      <div class="zone-rows">${rows}</div></div></div>`;
 }
 A.woDelete = el => confirmSheet('Training löschen?', 'Das Training wird endgültig aus deinem Verlauf entfernt.', 'Löschen', () => { Workouts.remove(el.dataset.id); go('training/verlauf'); }, true);
 
@@ -3667,7 +3699,11 @@ const NoopBak = (() => {
   async function read(file) {
     let buf = await file.arrayBuffer();
     const head = new TextDecoder().decode(new Uint8Array(buf, 0, Math.min(15, buf.byteLength)));
-    if (head !== 'SQLite format 3') buf = await unzipEntry(buf, n => /\.sqlite$/i.test(n));
+    let profile = {};
+    if (head !== 'SQLite format 3') {
+      try { profile = JSON.parse(new TextDecoder().decode(await unzipEntry(buf, n => n === 'settings.json'))); } catch (e) { profile = {}; }
+      buf = await unzipEntry(buf, n => /\.sqlite$/i.test(n));
+    }
     const db = openDb(buf);
     if (!db.tables.includes('dailyMetric')) throw new Error('Das ist keine NOOP-Datenbank.');
     const DAY_FIELDS = { recovery: 'rec', strain: 'strain', avgHrv: 'hrv', restingHr: 'rhr', totalSleepMin: 'sleep', deepMin: 'deep', remMin: 'rem', lightMin: 'light', efficiency: 'eff', steps: 'steps', respRateBpm: 'resp', spo2Pct: 'spo2', activeKcalEst: 'kcal' };
@@ -3698,7 +3734,38 @@ const NoopBak = (() => {
     }
     workouts.forEach(w => { delete w._p; Object.keys(w).forEach(k => { if (w[k] == null) delete w[k]; else if (typeof w[k] === 'number') w[k] = Math.round(w[k] * 10) / 10; }); });
     workouts.sort((a, b) => b.start - a.start);
-    return { days, workouts };
+    // Maximalpuls wie in NOOP: eigener Wert aus dem Profil, sonst Tanaka 208 − 0,7 × Alter
+    const age = +profile['profile.age'] || 0;
+    const hrMax = +profile['profile.hrMax'] || (age ? Math.round(208 - 0.7 * age) : 0);
+    if (db.tables.includes('hrSample')) attachHr(db, workouts.slice(0, 30), hrMax);
+    return { days, workouts, hrMax, profile: { age: age || undefined, weightKg: +profile['profile.weightKg'] || undefined } };
+  }
+  // Pulsverlauf (10-Sekunden-Mittel) und Zeit in den Zonen für die neuesten Workouts
+  function attachHr(db, list, hrMax) {
+    const wins = list.map(w => ({ w, s: Math.round(w.start / 1000), e: Math.round(w.end / 1000), b: {}, z: [0, 0, 0, 0, 0, 0], n: 0, sum: 0, max: 0 }));
+    if (!wins.length) return;
+    const lo = Math.min(...wins.map(x => x.s)), hi = Math.max(...wins.map(x => x.e));
+    const bounds = hrMax ? [0.5, 0.6, 0.7, 0.8, 0.9].map(p => p * hrMax) : null;
+    for (const r of db.select('hrSample')) {
+      const ts = r.ts, bpm = r.bpm;
+      if (ts < lo || ts > hi || !(bpm > 25 && bpm < 240) || /-noop$/.test(r.deviceId || '')) continue;
+      for (const x of wins) {
+        if (ts < x.s || ts > x.e) continue;
+        const k = Math.floor((ts - x.s) / 10);
+        const b = x.b[k] || (x.b[k] = [0, 0]); b[0] += bpm; b[1]++;
+        x.n++; x.sum += bpm; if (bpm > x.max) x.max = bpm;
+        if (bounds) { let z = 0; while (z < 5 && bpm >= bounds[z]) z++; x.z[z]++; }
+      }
+    }
+    wins.forEach(x => {
+      if (x.n < 30) return;
+      const len = Math.ceil((x.e - x.s) / 10) + 1, v = [];
+      for (let i = 0; i < len; i++) v.push(x.b[i] ? Math.round(x.b[i][0] / x.b[i][1]) : null);
+      x.w.hr = { step: 10, v };
+      if (bounds) { x.w.zones = x.z; x.w.hrMax = hrMax; }
+      if (x.w.avgHr == null) x.w.avgHr = Math.round(x.sum / x.n);
+      if (x.w.maxHr == null) x.w.maxHr = x.max;
+    });
   }
   return { read, openDb, columnsOf, unzipEntry };
 })();
@@ -3750,9 +3817,11 @@ const NoopData = {
     let n = 0;
     list.filter(w => w.src === 'manual' && w.start >= from).forEach(w => {
       const id = 'noop-' + Math.round(w.start / 1000);
-      if (mine.some(x => x.id === id || (x.start < w.end && (x.end || x.start) > w.start))) return;   // schon da oder im Logger mitgeschrieben
+      const had = mine.find(x => x.id === id);
+      if (had) { if (w.hr && !had.hr) Workouts.save(Object.assign({}, had, { hr: w.hr, zones: w.zones, hrMax: w.hrMax })); return; }
+      if (mine.some(x => x.start < w.end && (x.end || x.start) > w.start)) return;   // im Logger mitgeschrieben
       Workouts.save({ id, src: 'noop', name: sportDe(w.sport), sport: w.sport, start: w.start, end: w.end, items: [],
-        strain: w.strain, kcal: w.kcal != null ? Math.round(w.kcal) : undefined, avgHr: w.avgHr, maxHr: w.maxHr });
+        strain: w.strain, kcal: w.kcal != null ? Math.round(w.kcal) : undefined, avgHr: w.avgHr, maxHr: w.maxHr, hr: w.hr, zones: w.zones, hrMax: w.hrMax });
       n++;
     });
     return n;
