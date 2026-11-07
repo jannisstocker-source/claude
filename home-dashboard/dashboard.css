@@ -613,3 +613,5 @@ button.li:hover, a.li:hover { background: var(--surface-2); }
 @media (max-width: 560px) { .cal { gap: 3px; } .cal-day { min-height: 46px; padding: 6px 0; border-radius: 10px; font-size: 14px; } }
 .glass-s { width: 22px; height: 28px; border-radius: 4px 4px 7px 7px; }
 .water .glass-s::after { opacity: .7; }
+
+.wrap-sub .li-sub { white-space: normal; }

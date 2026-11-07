@@ -1,7 +1,7 @@
 /* Zuhause Dashboard – gemeinsame Logik aller Seiten */
 'use strict';
 const PAGES = [{"view": "heute", "file": "index.html", "name": "Zuhause Dashboard", "short": "Zuhause"}, {"view": "training", "file": "training.html", "name": "Training", "short": "Training"}, {"view": "essen", "file": "ernaehrung.html", "name": "Ernährung", "short": "Essen"}, {"view": "laufen", "file": "laufen.html", "name": "Laufen", "short": "Laufen"}, {"view": "zuhause", "file": "zuhause.html", "name": "Zuhause", "short": "Zuhause"}, {"view": "finanzen", "file": "finanzen.html", "name": "Finanzen", "short": "Finanzen"}, {"view": "planer", "file": "planer.html", "name": "Planer", "short": "Planer"}, {"view": "einstellungen", "file": "einstellungen.html", "name": "Einstellungen", "short": "Einstellungen"}];
-const SPRITE = "<svg class=\"sprite\" aria-hidden=\"true\" focusable=\"false\">\n  <symbol id=\"i-home\" viewBox=\"0 0 24 24\"><path d=\"M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z\"/></symbol>\n  <symbol id=\"i-gym\" viewBox=\"0 0 24 24\"><path d=\"M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11\"/></symbol>\n  <symbol id=\"i-food\" viewBox=\"0 0 24 24\"><path d=\"M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 21V3c-2.2 1.2-3.5 3.6-3.5 7.5V14H16\"/></symbol>\n  <symbol id=\"i-run\" viewBox=\"0 0 24 24\"><circle cx=\"15\" cy=\"4.5\" r=\"1.8\"/><path d=\"m7 21 3.2-5.2 3 2.2.8 3M6 12l3.2-3.4 3.6.4 2 3.4 3 1.3M10.4 15.8l2.1-6.6\"/></symbol>\n  <symbol id=\"i-house\" viewBox=\"0 0 24 24\"><path d=\"M3.5 10 12 3.5 20.5 10M5.5 8.5V20h13V8.5\"/><path d=\"M10 20v-5.5h4V20\"/></symbol>\n  <symbol id=\"i-tv\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8.5 20.5h7M12 17v3.5\"/></symbol>\n  <symbol id=\"i-settings\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5\"/></symbol>\n  <symbol id=\"i-plus\" viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></symbol>\n  <symbol id=\"i-minus\" viewBox=\"0 0 24 24\"><path d=\"M5 12h14\"/></symbol>\n  <symbol id=\"i-check\" viewBox=\"0 0 24 24\"><path d=\"m5 12.5 4.5 4.5L19 7.5\"/></symbol>\n  <symbol id=\"i-x\" viewBox=\"0 0 24 24\"><path d=\"M6 6l12 12M18 6 6 18\"/></symbol>\n  <symbol id=\"i-left\" viewBox=\"0 0 24 24\"><path d=\"m14.5 6-6 6 6 6\"/></symbol>\n  <symbol id=\"i-right\" viewBox=\"0 0 24 24\"><path d=\"m9.5 6 6 6-6 6\"/></symbol>\n  <symbol id=\"i-up\" viewBox=\"0 0 24 24\"><path d=\"m6 14.5 6-6 6 6\"/></symbol>\n  <symbol id=\"i-down\" viewBox=\"0 0 24 24\"><path d=\"m6 9.5 6 6 6-6\"/></symbol>\n  <symbol id=\"i-trash\" viewBox=\"0 0 24 24\"><path d=\"M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10.5 11v5.5M13.5 11v5.5\"/></symbol>\n  <symbol id=\"i-edit\" viewBox=\"0 0 24 24\"><path d=\"M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4\"/></symbol>\n  <symbol id=\"i-timer\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"13.5\" r=\"7.5\"/><path d=\"M12 9.5v4l2.5 2M9.5 2.8h5M19 6.5l1.5-1.5\"/></symbol>\n  <symbol id=\"i-play\" viewBox=\"0 0 24 24\"><path d=\"M7.5 5v14l11-7z\"/></symbol>\n  <symbol id=\"i-pause\" viewBox=\"0 0 24 24\"><path d=\"M8 5v14M16 5v14\"/></symbol>\n  <symbol id=\"i-stop\" viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"6\" width=\"12\" height=\"12\" rx=\"1.5\"/></symbol>\n  <symbol id=\"i-search\" viewBox=\"0 0 24 24\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m15.5 15.5 5 5\"/></symbol>\n  <symbol id=\"i-barcode\" viewBox=\"0 0 24 24\"><path d=\"M3 5v14M6 5v14M9.5 5v14M11.5 5v14M15 5v14M18 5v14M21 5v14\"/></symbol>\n  <symbol id=\"i-flame\" viewBox=\"0 0 24 24\"><path d=\"M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-4 3.3-6 3.8-9.8 2.6 1.5 4 3.7 4.2 6.2 1-.6 1.6-1.6 1.8-3 1.9 1.7 3.2 4 3.2 6.6 0 3.6-2.6 6.2-6.5 6.2z\"/></symbol>\n  <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\"><path d=\"M7.5 4h9v5a4.5 4.5 0 0 1-9 0zM7.5 6H4.5c0 2.6 1.3 4 3.3 4.3M16.5 6h3c0 2.6-1.3 4-3.3 4.3M12 13.5V17M8.5 20.5h7M9.5 17h5v3.5h-5z\"/></symbol>\n  <symbol id=\"i-drop\" viewBox=\"0 0 24 24\"><path d=\"M12 3.5c3 3.8 6 7.2 6 10.6a6 6 0 0 1-12 0c0-3.4 3-6.8 6-10.6z\"/></symbol>\n  <symbol id=\"i-scale\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"3.5\" width=\"17\" height=\"17\" rx=\"4\"/><path d=\"M8.5 9.5a5 5 0 0 1 7 0L13 12\"/></symbol>\n  <symbol id=\"i-chart\" viewBox=\"0 0 24 24\"><path d=\"M4 4v16h16M8 15l3.5-4 3 2.5L19 8\"/></symbol>\n  <symbol id=\"i-list\" viewBox=\"0 0 24 24\"><path d=\"M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01\"/></symbol>\n  <symbol id=\"i-more\" viewBox=\"0 0 24 24\"><path d=\"M5.5 12h.01M12 12h.01M18.5 12h.01\"/></symbol>\n  <symbol id=\"i-bolt\" viewBox=\"0 0 24 24\"><path d=\"M13 3 5.5 13.5H12L11 21l7.5-10.5H12z\"/></symbol>\n  <symbol id=\"i-pin\" viewBox=\"0 0 24 24\"><path d=\"M12 21s6.5-6 6.5-11a6.5 6.5 0 0 0-13 0c0 5 6.5 11 6.5 11z\"/><circle cx=\"12\" cy=\"10\" r=\"2.3\"/></symbol>\n  <symbol id=\"i-bulb\" viewBox=\"0 0 24 24\"><path d=\"M9 17.5h6M10 20.5h4M8.3 14.5A6 6 0 1 1 15.7 14.5c-.8.7-1.2 1.6-1.2 2.5v.5h-5V17c0-.9-.4-1.8-1.2-2.5z\"/></symbol>\n  <symbol id=\"i-blinds\" viewBox=\"0 0 24 24\"><path d=\"M4 4h16M5 4v16M19 4v16M5 8h14M5 12h14M5 16h14\"/></symbol>\n  <symbol id=\"i-thermo\" viewBox=\"0 0 24 24\"><path d=\"M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z\"/><path d=\"M12 9v7\"/></symbol>\n  <symbol id=\"i-plug\" viewBox=\"0 0 24 24\"><path d=\"M9 3v5M15 3v5M6.5 8h11v3a5.5 5.5 0 0 1-11 0zM12 16.5V21\"/></symbol>\n  <symbol id=\"i-vacuum\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 3.5v2\"/></symbol>\n  <symbol id=\"i-speaker\" viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"3\" width=\"12\" height=\"18\" rx=\"2\"/><circle cx=\"12\" cy=\"14\" r=\"3.2\"/><path d=\"M12 7h.01\"/></symbol>\n  <symbol id=\"i-coffee\" viewBox=\"0 0 24 24\"><path d=\"M5 9h11v5.5A5.5 5.5 0 0 1 10.5 20h0A5.5 5.5 0 0 1 5 14.5zM16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5c0 1.5 1.5 1.5 1.5 3M12 3.5c0 1.5 1.5 1.5 1.5 3\"/></symbol>\n  <symbol id=\"i-link\" viewBox=\"0 0 24 24\"><path d=\"M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5\"/></symbol>\n  <symbol id=\"i-copy\" viewBox=\"0 0 24 24\"><rect x=\"8.5\" y=\"8.5\" width=\"11\" height=\"11\" rx=\"2\"/><path d=\"M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5\"/></symbol>\n  <symbol id=\"i-calendar\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"5\" width=\"17\" height=\"15.5\" rx=\"2\"/><path d=\"M3.5 10h17M8 3v4M16 3v4\"/></symbol>\n  <symbol id=\"i-sync\" viewBox=\"0 0 24 24\"><path d=\"M19.5 10A7.5 7.5 0 0 0 6 6.5L4.5 8M4.5 14A7.5 7.5 0 0 0 18 17.5l1.5-1.5M4.5 4v4h4M19.5 20v-4h-4\"/></symbol>\n  <symbol id=\"i-camera\" viewBox=\"0 0 24 24\"><path d=\"M4 8h3.5L9 5.5h6L16.5 8H20v11H4z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></symbol>\n  <symbol id=\"i-wallet\" viewBox=\"0 0 24 24\"><path d=\"M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V18a1.5 1.5 0 0 0 1.5 1.5H20V8H6.5A2.5 2.5 0 0 1 4 7.5z\"/><circle cx=\"16\" cy=\"13.75\" r=\"1.2\"/></symbol>\n  <symbol id=\"i-cart\" viewBox=\"0 0 24 24\"><path d=\"M3 4h2.5l2.2 10.5h10.6L20.5 7H6.6\"/><circle cx=\"9\" cy=\"19\" r=\"1.5\"/><circle cx=\"17\" cy=\"19\" r=\"1.5\"/></symbol>\n  <symbol id=\"i-tasks\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"4\" width=\"5\" height=\"5\" rx=\"1.2\"/><path d=\"m4.8 6.5 1 1 1.8-2M11.5 6.5h9M3.5 15h5v5h-5zM11.5 17.5h9\"/></symbol>\n  <symbol id=\"i-grid\" viewBox=\"0 0 24 24\"><rect x=\"4\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"4\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/></symbol>\n  <symbol id=\"i-meter\" viewBox=\"0 0 24 24\"><path d=\"M4.5 16.5a8 8 0 1 1 15 0\"/><path d=\"M12 13.5 15.5 9\"/><circle cx=\"12\" cy=\"14\" r=\"1.3\"/><path d=\"M5 20h14\"/></symbol>\n  <symbol id=\"i-euro\" viewBox=\"0 0 24 24\"><path d=\"M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4.5 10.5h9M4.5 13.5h9\"/></symbol>\n</svg>";
+const SPRITE = "<svg class=\"sprite\" aria-hidden=\"true\" focusable=\"false\">\n  <symbol id=\"i-home\" viewBox=\"0 0 24 24\"><path d=\"M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z\"/></symbol>\n  <symbol id=\"i-gym\" viewBox=\"0 0 24 24\"><path d=\"M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11\"/></symbol>\n  <symbol id=\"i-food\" viewBox=\"0 0 24 24\"><path d=\"M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 21V3c-2.2 1.2-3.5 3.6-3.5 7.5V14H16\"/></symbol>\n  <symbol id=\"i-run\" viewBox=\"0 0 24 24\"><circle cx=\"15\" cy=\"4.5\" r=\"1.8\"/><path d=\"m7 21 3.2-5.2 3 2.2.8 3M6 12l3.2-3.4 3.6.4 2 3.4 3 1.3M10.4 15.8l2.1-6.6\"/></symbol>\n  <symbol id=\"i-house\" viewBox=\"0 0 24 24\"><path d=\"M3.5 10 12 3.5 20.5 10M5.5 8.5V20h13V8.5\"/><path d=\"M10 20v-5.5h4V20\"/></symbol>\n  <symbol id=\"i-tv\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8.5 20.5h7M12 17v3.5\"/></symbol>\n  <symbol id=\"i-settings\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5\"/></symbol>\n  <symbol id=\"i-plus\" viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></symbol>\n  <symbol id=\"i-minus\" viewBox=\"0 0 24 24\"><path d=\"M5 12h14\"/></symbol>\n  <symbol id=\"i-check\" viewBox=\"0 0 24 24\"><path d=\"m5 12.5 4.5 4.5L19 7.5\"/></symbol>\n  <symbol id=\"i-x\" viewBox=\"0 0 24 24\"><path d=\"M6 6l12 12M18 6 6 18\"/></symbol>\n  <symbol id=\"i-left\" viewBox=\"0 0 24 24\"><path d=\"m14.5 6-6 6 6 6\"/></symbol>\n  <symbol id=\"i-right\" viewBox=\"0 0 24 24\"><path d=\"m9.5 6 6 6-6 6\"/></symbol>\n  <symbol id=\"i-up\" viewBox=\"0 0 24 24\"><path d=\"m6 14.5 6-6 6 6\"/></symbol>\n  <symbol id=\"i-down\" viewBox=\"0 0 24 24\"><path d=\"m6 9.5 6 6 6-6\"/></symbol>\n  <symbol id=\"i-trash\" viewBox=\"0 0 24 24\"><path d=\"M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10.5 11v5.5M13.5 11v5.5\"/></symbol>\n  <symbol id=\"i-edit\" viewBox=\"0 0 24 24\"><path d=\"M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4\"/></symbol>\n  <symbol id=\"i-timer\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"13.5\" r=\"7.5\"/><path d=\"M12 9.5v4l2.5 2M9.5 2.8h5M19 6.5l1.5-1.5\"/></symbol>\n  <symbol id=\"i-play\" viewBox=\"0 0 24 24\"><path d=\"M7.5 5v14l11-7z\"/></symbol>\n  <symbol id=\"i-pause\" viewBox=\"0 0 24 24\"><path d=\"M8 5v14M16 5v14\"/></symbol>\n  <symbol id=\"i-stop\" viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"6\" width=\"12\" height=\"12\" rx=\"1.5\"/></symbol>\n  <symbol id=\"i-search\" viewBox=\"0 0 24 24\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m15.5 15.5 5 5\"/></symbol>\n  <symbol id=\"i-barcode\" viewBox=\"0 0 24 24\"><path d=\"M3 5v14M6 5v14M9.5 5v14M11.5 5v14M15 5v14M18 5v14M21 5v14\"/></symbol>\n  <symbol id=\"i-flame\" viewBox=\"0 0 24 24\"><path d=\"M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-4 3.3-6 3.8-9.8 2.6 1.5 4 3.7 4.2 6.2 1-.6 1.6-1.6 1.8-3 1.9 1.7 3.2 4 3.2 6.6 0 3.6-2.6 6.2-6.5 6.2z\"/></symbol>\n  <symbol id=\"i-trophy\" viewBox=\"0 0 24 24\"><path d=\"M7.5 4h9v5a4.5 4.5 0 0 1-9 0zM7.5 6H4.5c0 2.6 1.3 4 3.3 4.3M16.5 6h3c0 2.6-1.3 4-3.3 4.3M12 13.5V17M8.5 20.5h7M9.5 17h5v3.5h-5z\"/></symbol>\n  <symbol id=\"i-drop\" viewBox=\"0 0 24 24\"><path d=\"M12 3.5c3 3.8 6 7.2 6 10.6a6 6 0 0 1-12 0c0-3.4 3-6.8 6-10.6z\"/></symbol>\n  <symbol id=\"i-scale\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"3.5\" width=\"17\" height=\"17\" rx=\"4\"/><path d=\"M8.5 9.5a5 5 0 0 1 7 0L13 12\"/></symbol>\n  <symbol id=\"i-chart\" viewBox=\"0 0 24 24\"><path d=\"M4 4v16h16M8 15l3.5-4 3 2.5L19 8\"/></symbol>\n  <symbol id=\"i-list\" viewBox=\"0 0 24 24\"><path d=\"M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01\"/></symbol>\n  <symbol id=\"i-more\" viewBox=\"0 0 24 24\"><path d=\"M5.5 12h.01M12 12h.01M18.5 12h.01\"/></symbol>\n  <symbol id=\"i-bolt\" viewBox=\"0 0 24 24\"><path d=\"M13 3 5.5 13.5H12L11 21l7.5-10.5H12z\"/></symbol>\n  <symbol id=\"i-pin\" viewBox=\"0 0 24 24\"><path d=\"M12 21s6.5-6 6.5-11a6.5 6.5 0 0 0-13 0c0 5 6.5 11 6.5 11z\"/><circle cx=\"12\" cy=\"10\" r=\"2.3\"/></symbol>\n  <symbol id=\"i-bulb\" viewBox=\"0 0 24 24\"><path d=\"M9 17.5h6M10 20.5h4M8.3 14.5A6 6 0 1 1 15.7 14.5c-.8.7-1.2 1.6-1.2 2.5v.5h-5V17c0-.9-.4-1.8-1.2-2.5z\"/></symbol>\n  <symbol id=\"i-blinds\" viewBox=\"0 0 24 24\"><path d=\"M4 4h16M5 4v16M19 4v16M5 8h14M5 12h14M5 16h14\"/></symbol>\n  <symbol id=\"i-thermo\" viewBox=\"0 0 24 24\"><path d=\"M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z\"/><path d=\"M12 9v7\"/></symbol>\n  <symbol id=\"i-plug\" viewBox=\"0 0 24 24\"><path d=\"M9 3v5M15 3v5M6.5 8h11v3a5.5 5.5 0 0 1-11 0zM12 16.5V21\"/></symbol>\n  <symbol id=\"i-vacuum\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 3.5v2\"/></symbol>\n  <symbol id=\"i-speaker\" viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"3\" width=\"12\" height=\"18\" rx=\"2\"/><circle cx=\"12\" cy=\"14\" r=\"3.2\"/><path d=\"M12 7h.01\"/></symbol>\n  <symbol id=\"i-coffee\" viewBox=\"0 0 24 24\"><path d=\"M5 9h11v5.5A5.5 5.5 0 0 1 10.5 20h0A5.5 5.5 0 0 1 5 14.5zM16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5c0 1.5 1.5 1.5 1.5 3M12 3.5c0 1.5 1.5 1.5 1.5 3\"/></symbol>\n  <symbol id=\"i-link\" viewBox=\"0 0 24 24\"><path d=\"M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5\"/></symbol>\n  <symbol id=\"i-copy\" viewBox=\"0 0 24 24\"><rect x=\"8.5\" y=\"8.5\" width=\"11\" height=\"11\" rx=\"2\"/><path d=\"M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5\"/></symbol>\n  <symbol id=\"i-calendar\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"5\" width=\"17\" height=\"15.5\" rx=\"2\"/><path d=\"M3.5 10h17M8 3v4M16 3v4\"/></symbol>\n  <symbol id=\"i-sync\" viewBox=\"0 0 24 24\"><path d=\"M19.5 10A7.5 7.5 0 0 0 6 6.5L4.5 8M4.5 14A7.5 7.5 0 0 0 18 17.5l1.5-1.5M4.5 4v4h4M19.5 20v-4h-4\"/></symbol>\n  <symbol id=\"i-camera\" viewBox=\"0 0 24 24\"><path d=\"M4 8h3.5L9 5.5h6L16.5 8H20v11H4z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></symbol>\n  <symbol id=\"i-wallet\" viewBox=\"0 0 24 24\"><path d=\"M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V18a1.5 1.5 0 0 0 1.5 1.5H20V8H6.5A2.5 2.5 0 0 1 4 7.5z\"/><circle cx=\"16\" cy=\"13.75\" r=\"1.2\"/></symbol>\n  <symbol id=\"i-cart\" viewBox=\"0 0 24 24\"><path d=\"M3 4h2.5l2.2 10.5h10.6L20.5 7H6.6\"/><circle cx=\"9\" cy=\"19\" r=\"1.5\"/><circle cx=\"17\" cy=\"19\" r=\"1.5\"/></symbol>\n  <symbol id=\"i-tasks\" viewBox=\"0 0 24 24\"><rect x=\"3.5\" y=\"4\" width=\"5\" height=\"5\" rx=\"1.2\"/><path d=\"m4.8 6.5 1 1 1.8-2M11.5 6.5h9M3.5 15h5v5h-5zM11.5 17.5h9\"/></symbol>\n  <symbol id=\"i-grid\" viewBox=\"0 0 24 24\"><rect x=\"4\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"4\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/></symbol>\n  <symbol id=\"i-meter\" viewBox=\"0 0 24 24\"><path d=\"M4.5 16.5a8 8 0 1 1 15 0\"/><path d=\"M12 13.5 15.5 9\"/><circle cx=\"12\" cy=\"14\" r=\"1.3\"/><path d=\"M5 20h14\"/></symbol>\n  <symbol id=\"i-euro\" viewBox=\"0 0 24 24\"><path d=\"M17.5 6.5A6.5 6.5 0 1 0 17.5 17.5M4.5 10.5h9M4.5 13.5h9\"/></symbol>\n  <symbol id=\"i-pulse\" viewBox=\"0 0 24 24\"><path d=\"M3 12.5h4l2.2-5 3.6 10 2.4-6.5 1.3 1.5H21\"/></symbol>\n</svg>";
 /* =====================================================================
    Grundbausteine: Hilfsfunktionen, Speicher, Sync, Router, Dialoge
    ===================================================================== */
@@ -33,7 +33,7 @@ function fmtDur(sec, withHours) {
 }
 function fmtMin(sec) {
   const m = Math.round((sec || 0) / 60);
-  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
+  return m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}` : `${m} min`;
 }
 function fmtPace(secPerKm) {
   if (!secPerKm || !isFinite(secPerKm)) return '–';
@@ -607,7 +607,7 @@ const Charts = {
     if (s.zero) yMin = 0; else yMin -= padY;
     yMax += padY;
     const nt = niceTicks(yMin, yMax, 4);
-    const lo = s.zero ? 0 : nt.lo, hi = nt.hi;
+    const lo = s.zero ? 0 : nt.lo, hi = s.max != null ? s.max : nt.hi;
     const X = x => pl + (x - x0) / (x1 - x0) * (W - pl - pr);
     const Y = y => s.invert ? pt + (y - lo) / (hi - lo) * (H - pt - pb) : H - pb - (y - lo) / (hi - lo) * (H - pt - pb);
     const yFmt = s.yFmt || (v => fmt(v, 1));
@@ -1047,6 +1047,7 @@ V.heute = {
         ${tile('planer', 'Planer', `${due.length}<small>${due.length === 1 ? 'Aufgabe' : 'Aufgaben'}</small>`, next ? `Nächster Termin: ${fmtDate(next.k, { day: true })}${next.e.time ? ' ' + next.e.time : ''}` : shopOpen ? `${shopOpen} Dinge auf der Einkaufsliste` : 'heute fällig')}
       </nav>
       <div class="grid">
+        ${noopHomeCard()}
         <div class="card span-6"><div class="card-head"><h2>${icon('calendar')}Heute</h2><a class="btn btn-ghost btn-s" href="planer.html">Planer</a></div>
           ${evToday.length ? `<div class="list">${evToday.map(e => eventRow(e)).join('')}</div>` : ''}
           ${due.length ? `<div class="tasks" style="margin-top:${evToday.length ? 10 : 0}px">${due.slice(0, 6).map(taskRow).join('')}</div>` : ''}
@@ -1699,10 +1700,10 @@ function ivTick() {
 V.training = {
   render(r) {
     const a = Active.get();
-    const t = [['', 'Übersicht'], ['aktiv', a ? 'Training läuft' : 'Training'], ['plaene', 'Pläne'], ['uebungen', 'Übungen'], ['verlauf', 'Verlauf'], ['timer', 'Timer & Rechner']];
+    const t = [['', 'Übersicht'], ['aktiv', a ? 'Training läuft' : 'Training'], ['plaene', 'Pläne'], ['uebungen', 'Übungen'], ['verlauf', 'Verlauf'], ['noop', 'NOOP'], ['timer', 'Timer & Rechner']];
     if (r.sub === 'uebung') return renderExerciseDetail(r.args[0]);
     if (r.sub === 'einheit') return renderWorkoutDetail(r.args[0]);
-    const body = { '': renderTrainingDash, aktiv: renderActive, plaene: renderPlans, uebungen: renderExercises, verlauf: renderHistory, timer: renderTools }[r.sub] || renderTrainingDash;
+    const body = { '': renderTrainingDash, aktiv: renderActive, plaene: renderPlans, uebungen: renderExercises, verlauf: renderHistory, noop: renderNoop, timer: renderTools }[r.sub] || renderTrainingDash;
     const head = r.sub === 'aktiv' && a ? '' : pageHead('Training', r.sub ? '' : `${Workouts.all().length} Trainings gespeichert`);
     return head + tabs('training', t, r.sub) + body();
   }
@@ -3210,7 +3211,7 @@ function renderCalendar() {
       ${calMonth !== t.slice(0, 7) ? `<button class="btn btn-s" data-act="calToday">Heute</button>` : ''}</div>
       <div class="cal" role="grid" aria-label="Kalender ${MONTHS_LONG[m - 1]}">${['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => `<span class="cal-wd">${d}</span>`).join('')}
       ${cells.map(k => {
-        const e = Planner.eventsOn(k).length, d = Planner.open().some(x => x.due === k), sp = Workouts.all().some(w => dkey(w.start) === k) || Runs.all().some(r => dkey(r.start) === k);
+        const e = Planner.eventsOn(k).length, d = Planner.open().some(x => x.due === k), sp = Workouts.all().some(w => dkey(w.start) === k) || Runs.all().some(r => dkey(r.start) === k) || NoopData.workouts().some(w => dkey(w.start) === k);
         return `<button class="cal-day${k.slice(0, 7) !== calMonth ? ' out' : ''}${k === t ? ' today' : ''}${k === sel ? ' sel' : ''}" data-act="calPick" data-d="${k}" aria-label="${fmtDate(k, { day: true, plain: true })}${e ? ', ' + e + ' Termine' : ''}">
           <span>${+k.slice(8)}</span><span class="cal-dots">${e ? '<i class="ev"></i>' : ''}${d ? '<i class="td"></i>' : ''}${sp ? '<i class="sp"></i>' : ''}</span></button>`;
       }).join('')}</div>
@@ -3256,6 +3257,312 @@ V.planer = {
     return pageHead('Planer', '') + tabs('planer', [['', 'Übersicht'], ['aufgaben', 'Aufgaben'], ['einkauf', 'Einkauf'], ['kalender', 'Kalender']], r.sub) + body();
   }
 };
+
+/* =====================================================================
+   NOOP-Sicherung lesen (.noopbak = ZIP mit noop-backup.sqlite).
+   Eigener kleiner ZIP- und SQLite-Leser, ohne Bibliotheken.
+   ===================================================================== */
+const NoopBak = (() => {
+  /* ---------- ZIP ---------- */
+  async function unzipEntry(buf, wanted) {
+    const dv = new DataView(buf), u8 = new Uint8Array(buf);
+    let eocd = -1;
+    for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('Die Datei ist keine NOOP-Sicherung (kein ZIP).');
+    const count = dv.getUint16(eocd + 10, true);
+    let p = dv.getUint32(eocd + 16, true);
+    const dec = new TextDecoder();
+    for (let n = 0; n < count; n++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+      const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), commLen = dv.getUint16(p + 32, true);
+      const local = dv.getUint32(p + 42, true);
+      const name = dec.decode(u8.subarray(p + 46, p + 46 + nameLen));
+      p += 46 + nameLen + extraLen + commLen;
+      if (!wanted(name)) continue;
+      const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+      const data = u8.subarray(start, start + csize);
+      if (method === 0) return data.slice().buffer;
+      if (method !== 8) throw new Error('Unbekannte Komprimierung in der Sicherung.');
+      if (typeof DecompressionStream === 'undefined') throw new Error('Dieser Browser kann die Sicherung nicht entpacken (Safari 16.4 oder neuer nötig).');
+      const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return await new Response(stream).arrayBuffer();
+    }
+    throw new Error('In der Sicherung fehlt die Datenbank.');
+  }
+
+  /* ---------- SQLite ---------- */
+  function openDb(buf) {
+    const u8 = new Uint8Array(buf), dv = new DataView(buf);
+    if (new TextDecoder().decode(u8.subarray(0, 15)) !== 'SQLite format 3') throw new Error('Keine SQLite-Datenbank in der Sicherung.');
+    let pageSize = dv.getUint16(16);
+    if (pageSize === 1) pageSize = 65536;
+    const usable = pageSize - u8[20];
+    const dec = new TextDecoder();
+    const pageOff = n => (n - 1) * pageSize;
+
+    // Nutzlast einer Tabellenzelle zusammensetzen (inkl. Überlaufseiten)
+    function payload(pos, size) {
+      const X = usable - 35;
+      if (size <= X) return u8.subarray(pos, pos + size);
+      const M = Math.floor((usable - 12) * 32 / 255) - 23;
+      const K = M + (size - M) % (usable - 4);
+      const localLen = K <= X ? K : M;
+      const out = new Uint8Array(size);
+      out.set(u8.subarray(pos, pos + localLen), 0);
+      let got = localLen, next = dv.getUint32(pos + localLen);
+      while (next && got < size) {
+        const o = pageOff(next), take = Math.min(usable - 4, size - got);
+        out.set(u8.subarray(o + 4, o + 4 + take), got);
+        got += take; next = dv.getUint32(o);
+      }
+      return out;
+    }
+    function varintIn(p, pos) {
+      let x = 0;
+      for (let i = 0; i < 8; i++) {
+        const b = p[pos + i];
+        x = x * 128 + (b & 0x7f);
+        if (!(b & 0x80)) return [x, i + 1];
+      }
+      return [x * 256 + p[pos + 8], 9];
+    }
+    function record(p) {
+      const v = new DataView(p.buffer, p.byteOffset, p.byteLength);
+      const [hdr, n] = varintIn(p, 0);
+      const types = [];
+      for (let pos = n; pos < hdr;) { const [t, k] = varintIn(p, pos); types.push(t); pos += k; }
+      const vals = [];
+      let d = hdr;
+      for (const t of types) {
+        if (t === 0) vals.push(null);
+        else if (t === 8) vals.push(0);
+        else if (t === 9) vals.push(1);
+        else if (t >= 1 && t <= 6) {
+          // Ganzzahl, Big Endian im Zweierkomplement (1–8 Bytes)
+          const len = [0, 1, 2, 3, 4, 6, 8][t];
+          let u = 0;
+          for (let i = 0; i < len; i++) u = u * 256 + p[d + i];
+          if (p[d] & 0x80) u -= Math.pow(2, 8 * len);
+          vals.push(u); d += len;
+        } else if (t === 7) { vals.push(v.getFloat64(d)); d += 8; }
+        else if (t >= 12 && t % 2 === 0) { const len = (t - 12) / 2; vals.push(p.slice(d, d + len)); d += len; }
+        else if (t >= 13) { const len = (t - 13) / 2; vals.push(dec.decode(p.subarray(d, d + len))); d += len; }
+        else vals.push(null);
+      }
+      return vals;
+    }
+    // Alle Zeilen einer Tabelle ab ihrer Wurzelseite
+    function* rows(root) {
+      const stack = [root];
+      while (stack.length) {
+        const page = stack.pop();
+        const o = pageOff(page), h = page === 1 ? o + 100 : o;
+        const type = u8[h], cells = dv.getUint16(h + 3);
+        if (type === 0x05) {
+          const kids = [];
+          for (let i = 0; i < cells; i++) kids.push(dv.getUint32(o + dv.getUint16(h + 12 + i * 2)));
+          kids.push(dv.getUint32(h + 8));
+          for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+        } else if (type === 0x0d) {
+          for (let i = 0; i < cells; i++) {
+            let c = o + dv.getUint16(h + 8 + i * 2);
+            const [size, a] = varintIn(u8, c); c += a;
+            const [, b] = varintIn(u8, c); c += b;
+            yield record(payload(c, size));
+          }
+        }
+      }
+    }
+    const schema = {};
+    for (const r of rows(1)) if (r[0] === 'table') schema[r[1]] = { root: r[3], cols: columnsOf(r[4] || '') };
+    return {
+      tables: Object.keys(schema),
+      *select(table) {
+        const t = schema[table];
+        if (!t) return;
+        for (const r of rows(t.root)) { const o = {}; t.cols.forEach((c, i) => { o[c] = i < r.length ? r[i] : null; }); yield o; }
+      }
+    };
+  }
+  // Spaltennamen aus CREATE TABLE lesen (auch per ALTER TABLE angehängte Spalten)
+  function columnsOf(sql) {
+    const body = sql.slice(sql.indexOf('(') + 1, sql.lastIndexOf(')'));
+    const parts = [];
+    let depth = 0, cur = '', q = null;
+    for (const ch of body) {
+      if (q) { cur += ch; if (ch === q) q = null; continue; }
+      if (ch === '"' || ch === "'" || ch === '`' || ch === '[') { q = ch === '[' ? ']' : ch; cur += ch; continue; }
+      if (ch === '(') depth++;
+      if (ch === ')') depth--;
+      if (ch === ',' && depth === 0) { parts.push(cur); cur = ''; } else cur += ch;
+    }
+    if (cur.trim()) parts.push(cur);
+    return parts.map(s => s.trim()).filter(s => !/^(PRIMARY|UNIQUE|CHECK|FOREIGN|CONSTRAINT)\b/i.test(s))
+      .map(s => { const m = s.match(/^("([^"]+)"|`([^`]+)`|\[([^\]]+)\]|(\S+))/); return m[2] || m[3] || m[4] || m[5]; });
+  }
+
+  /* ---------- NOOP-Daten herausziehen ---------- */
+  const isComputed = id => /-noop$/.test(id || '');
+  const prio = id => id === 'apple-health' ? 2 : isComputed(id) ? 1 : 0;   // importiert vor berechnet vor Apple
+  async function read(file) {
+    let buf = await file.arrayBuffer();
+    const head = new TextDecoder().decode(new Uint8Array(buf, 0, Math.min(15, buf.byteLength)));
+    if (head !== 'SQLite format 3') buf = await unzipEntry(buf, n => /\.sqlite$/i.test(n));
+    const db = openDb(buf);
+    if (!db.tables.includes('dailyMetric')) throw new Error('Das ist keine NOOP-Datenbank.');
+    const DAY_FIELDS = { recovery: 'rec', strain: 'strain', avgHrv: 'hrv', restingHr: 'rhr', totalSleepMin: 'sleep', deepMin: 'deep', remMin: 'rem', lightMin: 'light', efficiency: 'eff', steps: 'steps', respRateBpm: 'resp', spo2Pct: 'spo2', activeKcalEst: 'kcal' };
+    const byDay = {};
+    for (const r of db.select('dailyMetric')) {
+      if (!r.day) continue;
+      (byDay[r.day] = byDay[r.day] || []).push(r);
+    }
+    const days = {};
+    Object.keys(byDay).forEach(day => {
+      const rs = byDay[day].sort((a, b) => prio(a.deviceId) - prio(b.deviceId));
+      const o = {};
+      Object.keys(DAY_FIELDS).forEach(f => { const r = rs.find(x => x[f] != null); if (r) o[DAY_FIELDS[f]] = Math.round(r[f] * 100) / 100; });
+      if (Object.keys(o).length) days[day] = o;
+    });
+    const seen = {}, workouts = [];
+    for (const w of db.select('workout')) {
+      if (!w.startTs || !w.endTs) continue;
+      const key = Math.round(w.startTs / 120);
+      const item = { start: w.startTs * 1000, end: w.endTs * 1000, sport: w.sport, src: w.source, dur: w.durationS || (w.endTs - w.startTs), kcal: w.energyKcal, avgHr: w.avgHr, maxHr: w.maxHr, strain: w.strain, dist: w.distanceM };
+      if (seen[key] !== undefined) {
+        const prev = workouts[seen[key]];
+        if (prio(w.deviceId) < prev._p) workouts[seen[key]] = Object.assign(item, { _p: prio(w.deviceId) });
+        continue;
+      }
+      seen[key] = workouts.length;
+      workouts.push(Object.assign(item, { _p: prio(w.deviceId) }));
+    }
+    workouts.forEach(w => { delete w._p; Object.keys(w).forEach(k => { if (w[k] == null) delete w[k]; else if (typeof w[k] === 'number') w[k] = Math.round(w[k] * 10) / 10; }); });
+    workouts.sort((a, b) => b.start - a.start);
+    return { days, workouts };
+  }
+  return { read, openDb, columnsOf, unzipEntry };
+})();
+
+/* =====================================================================
+   NOOP-Werte anzeigen: Recovery, Schlaf, HRV, Belastung und NOOP-Workouts
+   (Daten aus der NOOP-Sicherung, siehe noopbak.js)
+   ===================================================================== */
+const SPORT_DE = {
+  running: 'Laufen', walking: 'Gehen', hiking: 'Wandern', cycling: 'Radfahren', strength: 'Krafttraining', weightlifting: 'Gewichtheben',
+  powerlifting: 'Powerlifting', hiit: 'HIIT', swimming: 'Schwimmen', yoga: 'Yoga', rowing: 'Rudern', other: 'Sonstiges', detected: 'Erkannte Aktivität',
+  'treadmill run': 'Laufband', 'treadmill walk': 'Laufband (Gehen)', functionalfitness: 'Functional Fitness', 'functional fitness': 'Functional Fitness',
+  tennis: 'Tennis', football: 'Fußball', soccer: 'Fußball', basketball: 'Basketball', boxing: 'Boxen', climbing: 'Klettern', pilates: 'Pilates', handball: 'Handball'
+};
+const sportDe = s => SPORT_DE[String(s || '').toLowerCase()] || s || 'Workout';
+const fmtSleep = m => m ? `${Math.floor(m / 60)}:${pad2(Math.round(m % 60))} h` : '–';
+function recState(r) {
+  if (r == null) return { label: '–', color: 'var(--muted)' };
+  return r >= 67 ? { label: 'Erholt', color: 'var(--good)' } : r >= 34 ? { label: 'Mittel', color: '#c98500' } : { label: 'Niedrig', color: 'var(--bad)' };
+}
+
+const NoopData = {
+  days() { return Store.get('noopDays', {}) || {}; },
+  workouts() { return Store.get('noopWorkouts', []) || []; },
+  meta() { return Store.get('noopMeta', null); },
+  has() { return Object.keys(this.days()).length > 0 || this.workouts().length > 0; },
+  latest(field) {
+    const d = this.days(), keys = Object.keys(d).sort().reverse();
+    const k = keys.find(x => d[x][field] != null);
+    return k ? { day: k, v: d[k][field] } : null;
+  },
+  avg(field, n, before) {
+    const d = this.days(), keys = Object.keys(d).sort().filter(k => !before || k < before).slice(-n).filter(k => d[k][field] != null);
+    return keys.length ? sum(keys.map(k => d[k][field])) / keys.length : null;
+  },
+  save(r, fileName) {
+    // Nur die letzten 400 Tage und 400 Workouts behalten (passt in den Cloud-Sync)
+    const keep = {};
+    Object.keys(r.days).sort().slice(-400).forEach(k => { keep[k] = r.days[k]; });
+    Store.set('noopDays', keep);
+    Store.set('noopWorkouts', r.workouts.slice(0, 400));
+    const ks = Object.keys(keep).sort();
+    Store.set('noopMeta', { loaded: Date.now(), file: fileName, from: ks[0], to: ks[ks.length - 1], days: ks.length, workouts: r.workouts.length });
+  }
+};
+A.noopLoad = async el => {
+  const file = el.files && el.files[0];
+  if (!file) return;
+  toast('NOOP-Sicherung wird gelesen …');
+  try {
+    const r = await NoopBak.read(file);
+    NoopData.save(r, file.name);
+    toast(`${Object.keys(r.days).length} Tage und ${r.workouts.length} Workouts aus NOOP geladen`);
+    rerender();
+  } catch (e) {
+    toast(e && e.message ? e.message : 'Die Sicherung konnte nicht gelesen werden');
+  }
+  el.value = '';
+};
+const noopLoadBtn = (label, cls) => `<label class="btn ${cls || ''}" style="cursor:pointer">${icon('sync')}${label}<input type="file" accept=".noopbak,.zip,.sqlite,application/zip,application/octet-stream" data-change="noopLoad" hidden></label>`;
+const NOOP_STEPS = `<ol class="steps small">
+  <li>In NOOP: Einstellungen → Backup &amp; Sync → automatisches Backup einschalten und als Ordner einen in <b>iCloud Drive</b> wählen, z. B. „NOOP-Backup“. NOOP legt dann jeden Tag beim Öffnen eine Sicherung ab.</li>
+  <li>Hier auf „NOOP laden“ tippen und im Ordner die neueste Datei <b>noop-backup-….noopbak</b> wählen.</li>
+  <li>Das Dashboard liest nur Tageswerte und Workouts heraus. Die Sicherung selbst bleibt unverändert.</li></ol>`;
+
+function renderNoop() {
+  if (!NoopData.has()) {
+    return `<div class="card" style="max-width:760px">${emptyState('pulse', 'Hier erscheinen deine Werte aus NOOP: Recovery, Schlaf, HRV, Belastung und alle Workouts, die NOOP erkannt hat.', noopLoadBtn('NOOP laden', 'btn-primary'))}
+      <hr class="divider"><h3 style="margin-bottom:10px">So geht’s</h3>${NOOP_STEPS}</div>`;
+  }
+  const d = NoopData.days(), meta = NoopData.meta() || {};
+  const t = todayKey();
+  const rec = NoopData.latest('rec'), hrv = NoopData.latest('hrv'), rhr = NoopData.latest('rhr'), sl = NoopData.latest('sleep'), st = NoopData.latest('strain');
+  const hrv30 = NoopData.avg('hrv', 30, hrv && hrv.day), rhr30 = NoopData.avg('rhr', 30, rhr && rhr.day);
+  const rs = recState(rec && rec.v);
+  const last = n => { const out = []; for (let i = n - 1; i >= 0; i--) out.push(addDays(t, -i)); return out; };
+  const recPts = last(30).filter(k => d[k] && d[k].rec != null).map(k => ({ x: parseKey(k).getTime(), y: d[k].rec, tip: `<b>${fmt(d[k].rec)} % Recovery</b><br>${esc(fmtDate(k, { plain: true, day: true }))}${d[k].hrv ? `<br>HRV ${fmt(d[k].hrv)} ms · Ruhepuls ${fmt(d[k].rhr)}` : ''}` }));
+  const sleepBars = last(14).map(k => { const v = d[k] && d[k].sleep; const dd = parseKey(k); return { label: DAYS[dd.getDay()], value: v ? Math.round(v / 6) / 10 : 0, strong: k === t, tip: `<b>${fmtSleep(v)}</b> Schlaf<br>${esc(fmtDate(k, { plain: true, day: true }))}${d[k] && d[k].deep ? `<br>Tief ${fmt(d[k].deep)} · REM ${fmt(d[k].rem)} · Leicht ${fmt(d[k].light)} min` : ''}` }; });
+  const strainBars = last(14).map(k => { const v = d[k] && d[k].strain; const dd = parseKey(k); return { label: DAYS[dd.getDay()], value: v ? Math.round(v) : 0, strong: k === t, tip: `<b>${v ? fmt(v) : '–'}</b> Belastung<br>${esc(fmtDate(k, { plain: true, day: true }))}` }; });
+  const ws = NoopData.workouts();
+  const delta = (v, base, unit, higherBetter) => {
+    if (v == null || base == null) return '';
+    const diff = v - base, good = higherBetter ? diff >= 0 : diff <= 0;
+    return `<span class="${good ? 'delta-up' : 'delta-down'}">${diff >= 0 ? '▲' : '▼'} ${fmt(Math.abs(diff))} ${unit}</span> zum 30-Tage-Schnitt`;
+  };
+  return `<div class="row-between wrap" style="margin-bottom:14px"><p class="muted small">Sicherung „${esc(meta.file || 'NOOP')}“ · geladen ${meta.loaded ? fmtDate(meta.loaded) + ', ' + fmtTime(meta.loaded) : ''} · Daten bis ${meta.to ? fmtDate(meta.to) : '–'}</p>
+      ${noopLoadBtn('Neue Sicherung laden')}</div>
+    <div class="kpis">
+      <div class="card"><div class="stat-label">Recovery${rec && rec.day !== t ? ' · ' + fmtDate(rec.day) : ''}</div><div class="stat-value" style="color:${rs.color}">${rec ? fmt(rec.v) : '–'}<small>%</small></div><div class="stat-foot"><span class="chip" style="color:${rs.color}">● ${rs.label}</span></div></div>
+      <div class="card"><div class="stat-label">HRV</div><div class="stat-value">${hrv ? fmt(hrv.v) : '–'}<small>ms</small></div><div class="stat-foot">${delta(hrv && hrv.v, hrv30, 'ms', true)}</div></div>
+      <div class="card"><div class="stat-label">Ruhepuls</div><div class="stat-value">${rhr ? fmt(rhr.v) : '–'}<small>bpm</small></div><div class="stat-foot">${delta(rhr && rhr.v, rhr30, 'bpm', false)}</div></div>
+      <div class="card"><div class="stat-label">Schlaf${sl && sl.day !== t ? ' · ' + fmtDate(sl.day) : ''}</div><div class="stat-value">${sl ? fmtSleep(sl.v).replace(' h', '') : '–'}<small>h</small></div><div class="stat-foot">${sl && d[sl.day].eff ? 'Effizienz ' + fmt(d[sl.day].eff * 100) + ' %' : ''}${st ? ` · Belastung ${fmt(st.v)}` : ''}</div></div></div>
+    <div class="grid">
+      <div class="card span-12"><div class="card-head"><h2>${icon('chart')}Recovery · 30 Tage</h2><span class="muted small">grün ab 67 %, rot unter 34 %</span></div>
+        ${Charts.slot({ type: 'line', points: recPts, height: 220, zero: true, max: 100, label: 'Recovery der letzten 30 Tage', yFmt: v => fmt(v) + ' %', empty: 'Keine Recovery-Werte in den letzten 30 Tagen' })}</div>
+      <div class="card span-6"><div class="card-head"><h2>${icon('calendar')}Schlaf pro Nacht</h2><span class="muted small">Stunden</span></div>
+        ${Charts.slot({ type: 'bars', bars: sleepBars, goal: 8, goalLabel: '8 h', height: 200, label: 'Schlaf pro Nacht', yFmt: v => fmt(v, 1), empty: 'Keine Schlafdaten' })}</div>
+      <div class="card span-6"><div class="card-head"><h2>${icon('flame')}Belastung pro Tag</h2><span class="muted small">NOOP-Skala 0–100</span></div>
+        ${Charts.slot({ type: 'bars', bars: strainBars, height: 200, label: 'Belastung pro Tag', yFmt: v => fmt(v), empty: 'Keine Belastungswerte' })}</div>
+      <div class="card span-12"><div class="card-head"><h2>${icon('gym')}Workouts aus NOOP</h2><span class="muted small">${ws.length} gespeichert</span></div>
+        <div class="list wrap-sub">${ws.slice(0, 20).map(w => `<div class="li"><span class="tile-ic" style="width:36px;height:36px;border-radius:11px">${icon(/run|walk|hik|treadmill/i.test(w.sport) ? 'run' : 'gym', 'ic-s')}</span>
+          <div class="li-main"><div class="li-title">${esc(sportDe(w.sport))}${w.src === 'manual' ? ' <span class="chip">manuell</span>' : ''}</div>
+          <div class="li-sub">${fmtDate(w.start, { day: true })}, ${fmtTime(w.start)} · ${fmtMin(w.dur)}${w.dist ? ' · ' + fmt(w.dist / 1000, 1) + ' km' : ''}${w.avgHr ? ` · Ø ${w.avgHr} / max ${w.maxHr || '–'} bpm` : ''}</div></div>
+          <div class="li-end">${w.strain != null ? fmt(w.strain) : '–'}<div class="li-sub">${w.kcal ? fmt(w.kcal) + ' kcal' : 'Belastung'}</div></div></div>`).join('') || '<p class="empty">Keine Workouts in der Sicherung.</p>'}</div></div>
+    </div>`;
+}
+
+/* Kleine Karte für die Startseite */
+function noopHomeCard() {
+  if (!NoopData.has()) return '';
+  const rec = NoopData.latest('rec'), sl = NoopData.latest('sleep'), hrv = NoopData.latest('hrv'), st = NoopData.latest('strain');
+  const rs = recState(rec && rec.v);
+  const w = NoopData.workouts()[0];
+  return `<a class="card card-link span-12" href="training.html#/training/noop"><div class="card-head"><h2>${icon('pulse')}Erholung · NOOP</h2><span class="muted small">Stand ${rec ? fmtDate(rec.day) : '–'}</span></div>
+    <div class="nutri-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <div><b style="color:${rs.color}">${rec ? fmt(rec.v) + ' %' : '–'}</b><span>Recovery · ${rs.label}</span></div>
+      <div><b>${sl ? fmtSleep(sl.v) : '–'}</b><span>Schlaf</span></div>
+      <div><b>${hrv ? fmt(hrv.v) : '–'}</b><span>HRV (ms)</span></div>
+      <div><b>${st ? fmt(st.v) : '–'}</b><span>Belastung</span></div></div>
+    ${w ? `<p class="small muted" style="margin-top:10px">Letztes Workout: ${esc(sportDe(w.sport))}, ${fmtDate(w.start, { day: true })}${w.strain != null ? ' · Belastung ' + fmt(w.strain) : ''}</p>` : ''}</a>`;
+}
 
 /* =====================================================================
    Einstellungen und Datenverwaltung
