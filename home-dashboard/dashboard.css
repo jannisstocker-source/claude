@@ -787,3 +787,12 @@ h1, .hero h1, .tile h2, .room h2, .sheet-head h2 { font-family: var(--font); fon
 .zone-row .zb span { display: block; height: 100%; border-radius: 4px; }
 .route .km { fill: color-mix(in srgb, var(--ink) 45%, transparent); stroke: var(--surface); stroke-width: 1.5; }
 .route { height: 320px; }
+
+.sync-chip { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 999px; font-size: 13px; color: var(--ink-2); text-decoration: none; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5); }
+.sync-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.sync-chip.synced i { background: var(--good); }
+.sync-chip.local i, .sync-chip.error i, .sync-chip.offline i { background: #c98500; }
+.sync-chip:empty { display: none; }
+@media (max-width: 560px) { .sync-chip { padding: 0 10px; font-size: 12px; } }
+.local-note { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; }
+.local-note b { font-weight: 500; }

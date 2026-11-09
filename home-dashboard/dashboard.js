@@ -118,6 +118,25 @@ const Store = {
   keys(prefix) { return Object.keys(this.meta).filter(k => !prefix || k.indexOf(prefix) === 0).sort(); },
   exportAll() { const out = {}; this.keys().forEach(k => { out[k] = this.get(k); }); return out; },
   importAll(data) { Object.keys(data).forEach(k => { if (/^[a-z][a-z0-9-]*$/i.test(k)) this.set(k, data[k]); }); },
+  // Zusammenführen statt ersetzen: Listen nach id vereinigen, Objekte nach Schlüssel (die Datei gewinnt bei gleichen Einträgen)
+  mergeAll(data) {
+    let n = 0;
+    Object.keys(data).forEach(k => {
+      if (!/^[a-z][a-z0-9-]*$/i.test(k) || k === 'active' || k === 'probe' || data[k] == null) return;
+      const cur = this.get(k), inc = data[k];
+      let out = inc;
+      if (Array.isArray(cur) && Array.isArray(inc)) {
+        const key = x => x && typeof x === 'object' ? (x.id || x.d || JSON.stringify(x)) : String(x);
+        const map = new Map(cur.map(x => [key(x), x]));
+        inc.forEach(x => map.set(key(x), x));
+        out = Array.from(map.values());
+      } else if (cur && inc && typeof cur === 'object' && typeof inc === 'object' && !Array.isArray(cur) && !Array.isArray(inc)) {
+        out = Object.assign({}, cur, inc);
+      }
+      if (JSON.stringify(out) !== JSON.stringify(cur)) { this.set(k, out); n++; }
+    });
+    return n;
+  },
   clearAll() { this.keys().forEach(k => this.set(k, null)); }
 };
 
@@ -176,9 +195,11 @@ const Sync = {
 };
 // Beim Verlassen der Seite ausstehende Sync-Schreibvorgänge sofort anstoßen
 window.addEventListener('pagehide', () => { Object.keys(Sync.pending).forEach(k => { clearTimeout(Sync.pending[k]); if (Sync.col) Sync.write(k); }); Sync.pending = {}; });
+const SYNC_URL = 'https://claude.ai/artifact/6UQZywCWzB9eiL1w74DySu';
+const isLocalCopy = () => !(window.claude && typeof window.claude.use === 'function');
 function syncText() {
   return {
-    local: 'Daten liegen auf diesem Gerät',
+    local: 'Nur auf diesem Gerät gespeichert',
     connecting: 'Verbinde mit der Cloud …',
     synced: 'Synchronisiert zwischen deinen Geräten',
     offline: 'Cloud gerade nicht erreichbar',
@@ -187,6 +208,8 @@ function syncText() {
 }
 function renderSyncState() {
   $$('[data-sync]').forEach(el => { el.textContent = syncText(); });
+  const short = { local: 'Nur dieses Gerät', connecting: 'Verbinde …', synced: 'Abgeglichen', offline: 'Offline', error: 'Sync gestört' }[Sync.state];
+  $$('[data-sync-chip]').forEach(el => { el.className = 'sync-chip ' + Sync.state; el.title = syncText(); el.innerHTML = `<i></i>${short}`; });
 }
 
 /* Kleiner Ereignisbus */
@@ -335,7 +358,8 @@ function renderTopbar() {
   $('#topbar').innerHTML = `<div class="tb-inner">${PAGE === 'heute'
     ? `<span class="avatar" aria-hidden="true">${esc((s.name || 'J').trim().charAt(0).toUpperCase())}</span><span class="tb-welcome">${esc(s.name)}<small>Zuhause</small></span>`
     : `<a class="tb-back" href="index.html" aria-label="Zur Startseite">${icon('left')}Start</a><span class="tb-title">${icon(AREA_ICONS[PAGE])}<span>${esc(p.name)}</span></span>`}
-    <div class="tb-actions">${PAGE === 'einstellungen' ? '' : `<a class="icon-btn" href="einstellungen.html" aria-label="Einstellungen">${icon('settings')}</a>`}</div></div>`;
+    <div class="tb-actions"><a class="sync-chip" data-sync-chip href="einstellungen.html" aria-label="Status des Abgleichs"></a>${PAGE === 'einstellungen' ? '' : `<a class="icon-btn" href="einstellungen.html" aria-label="Einstellungen">${icon('settings')}</a>`}</div></div>`;
+  renderSyncState();
   // Bereichs-Leiste (links am Desktop, unten am Handy)
   if (!$('#dock')) document.body.insertAdjacentHTML('beforeend', `<nav class="dock" id="dock" aria-label="Bereiche">${PAGES.filter(x => x.view !== 'einstellungen').map(x =>
     `<a href="${x.file}" class="${x.view === PAGE ? 'active' : ''}"${x.view === PAGE ? ' aria-current="page"' : ''} aria-label="${x.view === 'heute' ? 'Start' : esc(x.name)}" title="${x.view === 'heute' ? 'Start' : esc(x.name)}">${icon(AREA_ICONS[x.view])}</a>`).join('')}</nav>`);
@@ -1041,6 +1065,9 @@ V.heute = {
     return `<header class="hero"><div><h1>${DAYS_LONG[now.getDay()]}, ${now.getDate()}. ${MONTHS_LONG[now.getMonth()]}</h1>
         <p class="sub">${parts.length ? parts.join(' · ') : 'Noch nichts eingetragen'}</p></div>
         <span class="hero-time" data-tick="clock">${fmtTime(Date.now())}</span></header>
+      ${isLocalCopy() ? `<div class="card local-note"><div class="li-main"><b>Diese Fassung speichert nur auf diesem Gerät</b>
+        <p class="small muted">Für Mac und iPhone mit denselben Daten nutze den Link. So nimmst du deine Einträge mit: hier exportieren, dann in der Link-Fassung unter Einstellungen → Daten importieren.</p></div>
+        <div class="row wrap"><button class="btn" data-act="dataExport">Daten exportieren</button><a class="btn btn-primary" href="${SYNC_URL}" target="_blank" rel="noopener">Link öffnen</a></div></div>` : ''}
       ${active ? `<a class="banner" href="training.html#/training/aktiv">${icon('gym')}<div class="grow">${esc(active.name)} läuft<small><span data-tick="wo">${fmtDur((Date.now() - active.start) / 1000)}</span> · weiter trainieren</small></div>${icon('right')}</a>` : ''}
       ${live ? `<a class="banner" href="laufen.html#/laufen/live">${icon('run')}<div class="grow">Lauf wird aufgezeichnet<small>${fmt((LiveRun.st.dist || 0) / 1000, 2)} km</small></div>${icon('right')}</a>` : ''}
       <nav class="tiles" aria-label="Bereiche">
@@ -4069,7 +4096,7 @@ A.dataImport = el => {
     try {
       const j = JSON.parse(r.result);
       if (!j || j.app !== 'zuhause-dashboard' || !j.data) throw new Error('format');
-      confirmSheet('Daten importieren?', 'Vorhandene Einträge mit gleichem Monat werden durch die Datei ersetzt.', 'Importieren', () => { Store.importAll(j.data); applyTheme(); toast('Import fertig'); rerender(); });
+      confirmSheet('Daten importieren?', 'Die Einträge aus der Datei werden zu deinen vorhandenen hinzugefügt. Gleiche Einträge übernimmt das Dashboard aus der Datei, nichts wird gelöscht.', 'Importieren', () => { const n = Store.mergeAll(j.data); applyTheme(); renderTopbar(); toast(n ? `Import fertig: ${n} Bereiche ergänzt` : 'Alles war schon da'); rerender(); });
     } catch (e) { toast('Die Datei ist kein Dashboard-Export'); }
   };
   r.readAsText(file);
